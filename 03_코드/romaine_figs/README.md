@@ -3,3 +3,5 @@
 - `run_figs.py` : 04_make_figures.py의 시계열(gsw·ΦPSII·Fs·ETR)·회복 비율 그림. `run_figs2.py` : 07_v13_review.py의 ΦPSII 3패널·Fv/Fm+신호크기. `run_figs3.py` : 생육·환경 비교. `run_aq.py` : 로메인 A-Q 곡선(10/18·19 light 파일이 값 없음 → 미사용).
 - 실행 전 `00_li600_daily_phase.py`로 `intermediate/daily_stats.csv`를 만들고 `ROM_DATA=<합친 data 폴더>` 환경변수를 지정한다.
 - 10/18·10/19 LI-6800 light 파일은 계산 결과가 저장되지 않은 상태라 LibreOffice로 강제 재계산(OOXMLRecalcMode=0)한 뒤 `run_aq.py`로 A-Q 곡선을 그렸다.
+- 보정 기준 확인(2026-10-30): 사용자 보정값 = 원값 + b1(Q평균−Q) + b2(T평균−T), 모형 `y ~ C(날짜_처리) + Qamb + Tair`를 **DAT≥1 전체**에 적합(처리 전 DAT −1 제외). `build_data.py`의 `02_LI600_개별측정.csv`는 DAT≥1만 넣어야 일평균이 사용자 값과 일치한다(차이 1e-11).
+- 구간(P1/P2) 표는 **원값**에 `ancova`를 한 번만 적용한 값이 v1 표와 일치한다. 00 스크립트가 만든 보정값을 다시 `ancova`에 넣으면 이중 보정으로 평균이 어긋난다.
