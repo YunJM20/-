@@ -1,0 +1,5 @@
+L=open('07_v13_review.py',encoding='utf-8').read().split('\n')
+seg='\n'.join(L[:113])+'\n'+'\n'.join(L[157:232])
+seg=seg.replace("'Lettuce'","'Romaine'").replace("Lettuce P1 signal size","Romaine P1 signal size").replace("'Soybean' if crop == 'bean' else 'Lettuce'","'Soybean' if crop == 'bean' else 'Romaine'")
+exec(compile(seg,'07_seg','exec'))
+print('07 ok')
