@@ -11,7 +11,8 @@ rows=[]
 for df,keep in [(a1,['ETc','침수 ETc']),(a2,['ETc','침수 ETc']),(b2,['ETc 50','침수50'])]:
     d=df[df.Treatment.isin(keep)]
     for r in d.itertuples(): rows.append(dict(날짜=r.날짜,처리=MAP[r.Treatment],반복=int(r.Repeat),w=float(getattr(r,'_4') if False else r[4])))
-W=pd.DataFrame(rows); W['DAT']=(pd.to_datetime(W.날짜)-pd.Timestamp('2026-10-07')).dt.days
+W=pd.DataFrame(rows); W=W[W.반복<=3]   # 전 기간 같은 포트(1~3번)만: 증산량 시트는 10/13부터 6반복, 관수량 시트는 4반복이라 평균 대상이 바뀌면 단차가 생김
+W['DAT']=(pd.to_datetime(W.날짜)-pd.Timestamp('2026-10-07')).dt.days
 W=W.dropna(subset=['w'])
 G=W.groupby(['처리','DAT']).w.agg(['mean','sem','count']).reset_index(); G.to_csv('intermediate/romaine_potweight.csv',index=False)
 print(G.groupby('처리')['count'].agg(['min','max']).to_string()); print(G.pivot(index='DAT',columns='처리',values='mean').round(0).to_string())
@@ -29,7 +30,7 @@ for t in ORDER:
     ax.fill_between(g.DAT, g['mean'] - g['sem'].fillna(0), g['mean'] + g['sem'].fillna(0), color=c, alpha=0.16, lw=0)
     ax.plot(g.DAT, g['mean'], color=c, ls=LS[t], lw=1.4, marker=MK[t], ms=3.5, mfc=c if FILLED[t] else 'white', mec=c, mew=1)
 ax.set_xlim(-0.8, 16.8); ax.set_ylim(300, 1550); ax.set_xticks([0, 5, 10, 15])
-ax.set_xlabel('DAT'); ax.set_ylabel('Pot weight before irrigation\\n(g, mean ± SE, n=3)', fontsize=7.5)
+ax.set_xlabel('DAT'); ax.set_ylabel('Pot weight before irrigation\\n(g, pots 1–3, mean ± SE)', fontsize=7.5)
 ax.set_title('Romaine pot weight')
 ax.legend([handle('lettuce', t) for t in ORDER], [NAME[t] for t in ORDER], fontsize=6.5, loc='lower left', bbox_to_anchor=(0.0, 0.0), ncol=2, handlelength=2.2)
 '''
