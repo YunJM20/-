@@ -47,7 +47,9 @@ PRE=pd.read_csv('data/02b_LI600_처리전_개별측정.csv'); PRECOL={'gsw':'gsw
 def ts_axes(ax,crop,ind,ylab=None,gray=False):
     s=A04[(A04.지표==ind)&(A04.작물==crop)]
     flood_span(ax)
-    for d in s[s.흐림==True].DAT.unique(): ax.axvspan(d-0.45,d+0.45,color=CLOUDC,lw=0,zorder=0)
+    for d in s[s.흐림==True].DAT.unique():
+        x0,x1=max(d-0.45,3.0),d+0.45
+        if x1>x0: ax.axvspan(x0,x1,color=CLOUDC,lw=0,zorder=0)
     for t in ORDER:
         g=s[s.처리==t].sort_values('DAT')
         if g.empty: continue
