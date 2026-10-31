@@ -374,4 +374,5 @@ cur={ids[i-1]:i for i in order}
 newlist=[ids[i-1] for i in order]
 for x in list(sld): sld.remove(x)
 for x in newlist: sld.append(x)
+for _s in prs.slides: fix_timing(_s)
 prs.save('oral/oral_v1.pptx'); print('saved',len(prs.slides))

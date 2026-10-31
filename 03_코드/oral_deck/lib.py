@@ -106,8 +106,10 @@ def replace_picture(slide, shape, pil, valign='top', maxh=None, maxw=None):
     left=L+(W-w)//2 if True else L
     top=T if valign=='top' else T+(H-h)//2
     b=io.BytesIO(); pil.save(b,format='PNG'); b.seek(0)
+    old_id=shape.shape_id
     new=slide.shapes.add_picture(b,left,top,w,h)
     new.name=shape.name
+    new._element.nvPicPr.cNvPr.set('id',str(old_id))
     # keep z-order
     el=shape._element; el.addprevious(new._element); el.getparent().remove(el)
     return new
@@ -187,3 +189,36 @@ def tighten(table, rows, cols):
             for run in _runs(table.cell(r,c).text_frame.paragraphs[0]):
                 t=run.find(A+'t')
                 if t is not None and t.text and '; ' in t.text: t.text=t.text.replace('; ',';')
+
+
+_PN='http://schemas.openxmlformats.org/presentationml/2006/main'
+def fix_timing(slide):
+    """Drop animation effects whose target shape no longer exists (PowerPoint 'repair' trigger)."""
+    q=lambda t:'{%s}%s'%(_PN,t)
+    sld=slide._element; timing=sld.find(q('timing'))
+    if timing is None: return 0
+    ids={e.get('id') for e in sld.iter(q('cNvPr'))}
+    removed=0
+    for ctn in list(timing.iter(q('cTn'))):
+        if ctn.get('presetID') is None: continue
+        tg=[e.get('spid') for e in ctn.iter(q('spTgt'))]
+        if tg and any(g not in ids for g in tg):
+            par=ctn.getparent()
+            if par is not None and par.getparent() is not None:
+                par.getparent().remove(par); removed+=1
+    changed=True
+    while changed:
+        changed=False
+        for ctn in list(timing.iter(q('cTn'))):
+            cl=ctn.find(q('childTnLst'))
+            par=ctn.getparent()
+            if cl is not None and len(cl)==0 and par is not None and par.tag==q('par') and par.getparent() is not None:
+                par.getparent().remove(par); changed=True; break
+    bl=timing.find('.//'+q('bldLst'))
+    if bl is not None:
+        for bp in list(bl):
+            if bp.get('spid') not in ids: bl.remove(bp)
+        if len(bl)==0: bl.getparent().remove(bl)
+    if not any(c.get('presetID') for c in timing.iter(q('cTn'))):
+        sld.remove(timing); removed+=1000
+    return removed
