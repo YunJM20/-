@@ -152,7 +152,7 @@ def yield_data():
     return b,r
 def yieldfig():
     b,r=yield_data(); fig,axs=plt.subplots(1,6,figsize=(7.7,2.3),dpi=300); rows=[]
-    sp=[('bean',b,'알 D.W','Seed DW (g·plant$^{-1}$)'),('bean',b,'알 수','Seed no. (plant$^{-1}$)'),('bean',b,'꼬투리 수','Pod no. (plant$^{-1}$)'),('bean',b,'hs','100-seed FW (g)'),
+    sp=[('bean',b,'알 D.W','Seed DW (g·plant$^{-1}$)'),('bean',b,'알 수','Seed no. (plant$^{-1}$)'),('bean',b,'꼬투리 수','Pod no. (plant$^{-1}$)'),('bean',b,'알 F.W','Seed FW (g·plant$^{-1}$)'),
         ('lettuce',r,'지상부생체중_전체','Shoot FW (g·plant$^{-1}$)'),('lettuce',r,'지상부건조중_전체','Shoot DW (g·plant$^{-1}$)')]
     for ax,(crop,df,col,lab) in zip(axs,sp):
         vals={t:df.loc[df.처리==t,col].dropna() for t in ORDER}; ms,P=bars(ax,vals,crop,lab)
@@ -178,7 +178,7 @@ def recap(crop):
         if q.ANOVA_P.iloc[0]<0.05:
             for k,t in enumerate(ORDER,1): ax.text(k,max(tops)*1.04,q.loc[t,'Tukey'],ha='center',fontsize=8)
         ax.set_ylim(0,max(tops)*1.25); ax.set_xticks([]); ax.set_ylabel(lab+' (µmol m$^{-2}$ s$^{-1}$)',fontsize=7.5); ax.tick_params(labelsize=7)
-    if crop=='bean': vals={t:b.loc[b.처리==t,'hs'].dropna() for t in ORDER}; lab='100-seed FW (g)'
+    if crop=='bean': vals={t:b.loc[b.처리==t,'알 F.W'].dropna() for t in ORDER}; lab='Seed FW (g·plant$^{-1}$)'
     else: vals={t:r.loc[r.처리==t,'지상부건조중_전체'].dropna() for t in ORDER}; lab='Shoot DW (g·plant$^{-1}$)'
     bars(a4,vals,crop,lab,gray=True); a4.set_ylabel(lab,fontsize=8)
     def hd(t,gray): 
