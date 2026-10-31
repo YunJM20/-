@@ -57,6 +57,18 @@ def set_widths(shape,widths,rowh=None):
     if rowh:
         for r in t.rows: r.height=Inches(rowh)
         shape.height=Inches(rowh*len(t.rows))
+
+def bottom_border(table,w=28575):
+    last=table._tbl.tr_lst[-1]
+    for tc in last.tc_lst:
+        tcPr=tc.get_or_add_tcPr()
+        for e in tcPr.findall(A+'lnB'): tcPr.remove(e)
+        ln=etree.Element(A+'lnB',w=str(w),cap='flat',cmpd='sng',algn='ctr')
+        sf=etree.SubElement(ln,A+'solidFill'); etree.SubElement(sf,A+'srgbClr',val='000000'); etree.SubElement(ln,A+'prstDash',val='solid')
+        idx=0
+        for i,ch in enumerate(list(tcPr)):
+            if ch.tag in (A+'lnL',A+'lnR',A+'lnT'): idx=i+1
+        tcPr.insert(idx,ln)
 def pct(v,d=0): 
     s=f'{abs(v):.{d}f}'
     return ('−' if v<0 else '+')+s+'%'
@@ -107,8 +119,8 @@ from pptx.enum.shapes import MSO_SHAPE
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 # romaine row up under soybean row
-lab=byname(s,'TextBox 38'); lab.top=Inches(2.95)
-for nm in ('Rounded Rectangle 39','Rounded Rectangle 41'): byname(s,nm).top=Inches(2.85)
+lab=byname(s,'TextBox 38'); lab.top=Inches(3.2)
+for nm in ('Rounded Rectangle 39','Rounded Rectangle 41'): byname(s,nm).top=Inches(3.1)
 set_para(lab.text_frame.paragraphs[0],'로메인')
 def box(x,y,w,h,text,fill,fc='FFFFFF',size=12,bold=False,align=PP_ALIGN.CENTER):
     b=s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE,Inches(x),Inches(y),Inches(w),Inches(h))
@@ -120,15 +132,19 @@ def box(x,y,w,h,text,fill,fc='FFFFFF',size=12,bold=False,align=PP_ALIGN.CENTER):
 rowsd=[('LI-600','기공전도도 · 형광','P1 : 매일 (DAT 1~9)\nP2 : 1~2주 간격','P1 : 매일 (DAT 1~10)\nP2 : 이틀 간격'),
        ('LI-6800','광합성 곡선 (A-Ci, A-PPFD)','P2 : 9월 중순\n(9/2~9/17, DAT 21~36)','P1~P2 : 10월 중순\n(10/16~10/19, DAT 9~12)'),
        ('생육 조사','수량 · 생육','9/1 (DAT 20), 10/6 (DAT 55)','10/23 (DAT 16)')]
-box(2.1,3.55,4.9,0.4,'콩','6B4226',size=12,bold=True); box(7.15,3.55,5.4,0.4,'로메인 상추','2E6B3F',size=12,bold=True)
+X0=2.10; DX=0.19
+for (y0,bnd,end) in [(2.74,9.5,55),(3.64,10.5,16)]:
+    box(X0,y0,DX*bnd,0.22,'P1','5B9BD5',size=10,bold=True); box(X0+DX*bnd,y0,DX*(end-bnd),0.22,'P2','2F5597',size=10,bold=True)
+box(2.1,4.05,4.9,0.4,'콩','6B4226',size=12,bold=True); box(7.15,4.05,5.4,0.4,'로메인 상추','2E6B3F',size=12,bold=True)
 for i,(h,hs,a,b_) in enumerate(rowsd):
-    y=4.02+i*0.58
-    hb=box(0.5,y,1.5,0.52,h,'0B76A0',size=13,bold=True)
-    box(2.1,y,4.9,0.52,a.replace('\n','  /  '),'E8EEF2',fc='1F2D3A',size=11.5)
-    box(7.15,y,5.4,0.52,b_.replace('\n','  /  '),'E8EEF2',fc='1F2D3A',size=11.5)
-byname(s,'Conclusion Box').top=Inches(5.95); byname(s,'Conclusion Box').height=Inches(0.55)
-foot(s,'콩 침수 8/12~14, 50% 관수는 8/15부터. 로메인 침수 10/7~10/10 오전, 50% 관수 10/12부터. 침수 시작일 = DAT 0.')
-notes(s,'(약 15초) 두 실험은 시기와 기간이 달라 침수 시작일을 DAT 0으로 맞추어 정렬했습니다. 로메인 상추는 처리 후 16일, 콩은 55일까지 관찰했습니다. LI-600은 초기에는 매일, 이후에는 콩은 1~2주 간격, 로메인은 이틀 간격으로 측정했고 LI-6800 광합성 곡선은 콩은 9월 중순, 로메인은 10월 중순에 측정했습니다.')
+    y=4.5+i*0.5
+    hb=box(0.5,y,1.5,0.44,h,'0B76A0',size=13,bold=True)
+    box(2.1,y,4.9,0.44,a.replace('\n','  /  '),'E8EEF2',fc='1F2D3A',size=11.5)
+    box(7.15,y,5.4,0.44,b_.replace('\n','  /  '),'E8EEF2',fc='1F2D3A',size=11.5)
+byname(s,'Conclusion Box').top=Inches(6.05); byname(s,'Conclusion Box').height=Inches(0.55)
+conc(s,'P1 : 침수 시작 ~ 종료 후 7일 (초기 반응·회복 시작)  ·  P2 : 이후 (회복 후기·건조 영향)')
+foot(s,'콩 침수 8/12~14, 50% 관수는 8/15부터. 로메인 침수 10/7~10/10 오전, 50% 관수 10/12부터. 침수 시작일을 DAT 0으로 맞추어 두 작물을 정렬. P1 = 콩 DAT 1~9, 로메인 DAT 1~10 / P2 = 이후.')
+notes(s,'(약 15초) 두 실험은 시기와 기간이 달라 침수 시작일을 DAT 0으로 맞추어 정렬했습니다. 로메인 상추는 처리 후 16일, 콩은 55일까지 관찰했습니다. LI-600은 초기에는 매일, 이후에는 콩은 1~2주 간격, 로메인은 이틀 간격으로 측정했고 LI-6800 광합성 곡선은 콩은 9월 중순, 로메인은 10월 중순에 측정했습니다. 결과는 침수 시작부터 종료 후 7일까지를 P1, 그 이후를 P2로 나누어 제시합니다.')
 
 # ===== 6 measurement items
 s=S(6)
@@ -137,14 +153,14 @@ for g in (bg,chip,ind,met): rm(g[2])
 bg=allnames(s,'Row bg'); chip=allnames(s,'Row chip'); ind=allnames(s,'Row ind'); met=allnames(s,'Row method')
 chips=['① 기공','② 명반응','③ 생화학적 능력','④ 생육·수량']
 inds=['g_{sw}','Φ_{PSII}, F_{s}, ETR','V_{cmax}, J_{max}, R_{d}, A–PPFD (LSP)','100립 생체중, 종실 건조중, 지상부 건물중']
-mets=['LI-600 포로미터, 처리 개시 후 반복 측정, PAR·기온 보정 (Ali et al., 2025; Gao et al., 2024)','LI-600 명적응 형광, PAR·기온 보정 (Ali et al., 2025; Gao et al., 2024)','LI-6800 A-Ci (FvCB), 광-광합성 곡선 (NRH 모형, LSP)','파괴 조사 (로메인 DAT 16, 콩 DAT 20·55)']
+mets=['LI-600 포로미터, 처리 개시 후 반복 측정 (보정 이전 값)','LI-600 명적응 형광, PAR·기온 보정 (Ali et al., 2025; Gao et al., 2024)','LI-6800 A-Ci (FvCB), 광-광합성 곡선 (NRH 모형, LSP)','파괴 조사 (로메인 DAT 16, 콩 DAT 20·55)']
 for k in range(4):
     y=1.50+k*1.08
     for g in (bg,chip,ind,met): g[k].top=Inches(y)
     set_para(chip[k].text_frame.paragraphs[0],chips[k]); set_para(ind[k].text_frame.paragraphs[0],inds[k]); set_para(met[k].text_frame.paragraphs[0],mets[k])
-conc(s,'통계: 측정일·PAR·기온 보정 평균 + 침수 × 관수 이원 ANOVA·Tukey')
-foot(s,'P1 = 침수 시작~종료 후 7일(콩 DAT 1~9, 로메인 DAT 1~10), P2 = 이후. LI-600 값 = PAR·기온 보정 평균 (Ali et al., 2025; Gao et al., 2024). 생육은 전 개체 사용.')
-notes(s,'(약 20초) 앞서 제시한 네 단계에 맞추어 지표를 측정했습니다. 기공전도도와 명반응은 LI-600으로 반복 측정했고, 측정 당시의 광도와 기온 차이는 선행 연구를 따라 공변량으로 보정했습니다. 광합성의 생화학적 능력은 LI-6800의 A-Ci와 광-광합성 곡선으로 평가했고, 생육과 수량은 파괴 조사로 측정했습니다.')
+conc(s,'통계: 침수 × 관수 이원 ANOVA·Tukey (형광 지표는 측정일·PAR·기온 보정 평균)')
+foot(s,'P1 = 침수 시작~종료 후 7일(콩 DAT 1~9, 로메인 DAT 1~10), P2 = 이후. 형광 지표(Φ_{PSII}, F_{s}, ETR) = PAR·기온 보정 평균 (Ali et al., 2025; Gao et al., 2024), g_{sw} = 측정 데이터의 보정 gsw(PAR·기온 보정 없음). 생육은 전 개체 사용.')
+notes(s,'(약 20초) 앞서 제시한 네 단계에 맞추어 지표를 측정했습니다. 기공전도도와 명반응은 LI-600으로 반복 측정했고, 형광 지표는 측정 당시의 광도와 기온 차이를 선행 연구를 따라 공변량으로 보정했고, 기공전도도는 보정하지 않은 값을 사용했습니다. 광합성의 생화학적 능력은 LI-6800의 A-Ci와 광-광합성 곡선으로 평가했고, 생육과 수량은 파괴 조사로 측정했습니다.')
 
 # ===== 33 (new) environment
 s=S(33); title(s,'기상 센서 : 기온, 일적산광량 (DLI)')
@@ -159,41 +175,45 @@ foot(s,'밭콩: CR1000X 기상 센서, 로메인: 26번 온실 환경 데이터(
 notes(s,'(약 20초) 두 실험은 계절이 달라 환경 조건이 크게 다릅니다. 콩의 처리 초기 평균 기온은 28.4도, 로메인 상추는 18.2도로 약 10도 낮았고 일적산광량도 로메인이 낮았습니다. 따라서 같은 50% 관수라도 증발산 부하가 달라 건조 스트레스 강도가 다르며, 두 작물의 차이는 병렬 사례로 해석하겠습니다.')
 
 # ===== 7 treatment check
-s=S(7); title(s,'로드셀·포트 무게 : 관수량, 누적 증산량')
+s=S(7); title(s,'로드셀·포트 무게 : 누적 관수량')
 replace_picture(s,byname(s,'Picture 26'),img(F3+'irr_cum.png'),valign='top')
 sv=allnames(s,'Stat value'); sl=allnames(s,'Stat label')
 set_para(sv[0].text_frame.paragraphs[0],'43% · 40%'); set_para(sl[0].text_frame.paragraphs[0],'건조구 누적 관수량 (로메인 · 콩, 대조구 대비)')
 set_para(sv[1].text_frame.paragraphs[0],'56% · 87%'); set_para(sl[1].text_frame.paragraphs[0],'침수구 누적 관수량 (로메인 · 콩, 대조구 대비)')
-set_paras2(byname(s,'Text 요점'),[('로메인:',' 누적 관수량은 건조 43%·침수 56%·복합 37%, 누적 증산량은 건조 72%·침수 84%·복합 74% (대조구 대비, DAT 6~16)'),
- ('콩:',' 누적 관수량은 건조 40%·침수 87%·복합 44%, 누적 증산량은 건조 50%·침수 88% (로드셀, DAT 4~54, 복합구 자료 없음)')])
+set_paras2(byname(s,'Text 요점'),[('로메인:',' 누적 관수량은 건조 43%·침수 56%·복합 37% (대조구 대비, 10/12~10/22, 포트 무게)'),
+ ('콩:',' 누적 관수량은 건조 40%·침수 87%·복합 44% (대조구 대비, 8/16~10/6, 로드셀)')])
 conc(s,'감수 관수는 실현됨 — 로메인 침수구는 과습으로 관수가 적었고 콩은 뿌리 이탈 가능성')
-foot(s,'관수: 포트에 들어간 누적 관수량(대조구 대비), 콩 8/16~10/6, 로메인 10/12~10/22. 누적 증산량 = 일 증산량(전날 관수 후 − 당일 관수 전 무게)의 합; 콩은 로드셀 mm × 38.01 g/mm, 결측일 선형 보간, 로메인은 증산량·관수량 시트(DAT 6~16 평균).')
-notes(s,'(약 30초) 결과를 보기 전에 처리가 실제로 어떻게 들어갔는지 확인했습니다. 대조구 대비 누적 관수량은 건조구가 로메인 43%, 콩 40%로 설계인 50%에 가까웠습니다. 침수구는 콩이 87%였지만 로메인은 화분이 과습한 상태가 유지되어 56%만 관수되었습니다. 누적 증산량은 로메인이 건조 72%, 침수 84%, 복합 74%였고 콩은 건조 50%, 침수 88%였습니다. 다만 콩은 포트 밖으로 나간 뿌리가 있어 실제 수분 이용은 다를 수 있습니다.')
+foot(s,'누적 관수량 = 일별 관수량의 합. 콩: 로드셀 관수량(mm) × 38.01 g/mm, 8/16~10/6(DAT 4~55). 로메인: 대조구는 로드셀 평균 관수량, 그 외는 관수량 시트의 포트 평균, 10/12~10/22(DAT 5~15).')
+notes(s,'(약 30초) 결과를 보기 전에 처리가 실제로 어떻게 들어갔는지 확인했습니다. 대조구 대비 누적 관수량은 건조구가 로메인 43%, 콩 40%로 설계인 50%에 가까웠습니다. 침수구는 콩이 87%였지만 로메인은 화분이 과습한 상태가 유지되어 56%만 관수되었습니다. 복합구는 로메인 37%, 콩 44%였습니다. 다만 콩은 포트 밖으로 나간 뿌리가 있어 실제 수분 이용은 다를 수 있습니다.')
 
 # ===== 8 gsw
 s=S(8); title(s,'LI-600 : 기공전도도 (g_{sw})')
 replace_picture(s,byname(s,'Picture 13'),img(F2+'ts_gsw.png'),valign='top')
 t=table_of(s)
-set_table(t,[['Treatment',None,None,'Romaine P1','Romaine P2'],[None,None,None,'0.264 a','0.155 ab'],[None,None,None,'0.249 a','0.113 b'],[None,None,None,'0.255 a','0.161 a'],[None,None,None,'0.237 a','0.144 ab']])
+gr=pd.read_csv('an/intermediate/gsw_phase_raw.csv')
+def gv(crop,per,tr):
+    q=gr[(gr.작물==crop)&(gr.구간==per)&(gr.처리==tr)]
+    return '–' if q.empty else f'{q.원평균.iloc[0]:.3f} {q.문자.iloc[0]}'
+set_table(t,[['Treatment','Soybean P1','Soybean P2','Romaine P1','Romaine P2']]+[[tn]+[gv(c,p_,tr) for c,p_ in [('bean','P1'),('bean','P2'),('lettuce','P1'),('lettuce','P2')]] for tn,tr in [('Control','ETc'),('Drought','ETc50'),('Waterlogging','침수ETc'),('Combined','침수ETc50')]])
 clean_table(t)
-set_paras2(byname(s,'TextBox 10'),[('콩 P1:',' 침수구 0.26이 대조구 0.35보다 낮음'),
+set_paras2(byname(s,'TextBox 10'),[('콩 P1:',' 침수구 0.27이 대조구 0.36보다 낮음'),
  ('콩 P2:',' 건조·복합구 0.22~0.23이 대조구·침수구 0.35보다 낮음'),
- ('로메인 P1:',' 침수 중 DAT 3에 대조구의 10%까지 급감했으나 DAT 5부터 대조구 수준으로 회복'),
- ('로메인 P2:',' 건조구 0.113이 침수구 0.161보다 낮음')])
-foot(s,'표: 측정일·선형 PAR·기온 보정 평균, Tukey 문자. 그림: 보정 일평균, 음영 ± SE, 회색 띠 흐린 날, * 당일 P<0.05(Holm).')
+ ('로메인 P1:',' 침수 중 DAT 3에 대조구의 10%까지 급감했으나 DAT 5에 89%로 회복'),
+ ('로메인 P2:',' 건조구 0.113이 침수구 0.162보다 낮음')])
+foot(s,'표·그림: PAR·기온 보정 이전 원자료(측정 데이터의 보정 gsw) 평균, Tukey 문자(처리 + 측정일 모형). 그림: 음영 ± SE, 회색 띠 흐린 날, 빗금 침수 기간, * 당일 P<0.05(Holm).')
 notes(s,'(약 40초) 첫 번째 단계인 기공입니다. 그래프와 표는 측정 광도와 기온을 보정한 값입니다. 침수 기간 동안 두 작물 모두 기공전도도가 감소했습니다. 로메인 상추는 침수 3일째 대조구의 10%까지 떨어졌다가 배수 직후 빠르게 회복했고, 콩은 침수 효과가 DAT 9까지 이어졌습니다. 건조는 두 작물 모두 후반에 기공전도도를 낮췄습니다.')
 
 # ===== 9 recovery
 s=S(9); title(s,'LI-600 : 기공전도도 회복 (g_{sw}, % of control)')
 replace_picture(s,byname(s,'Picture 26'),img(F3+'recovery.png'),valign='top')
-set_paras2(byname(s,'Recovery text'),[('로메인:',' 침수 DAT 3에 대조구의 10%까지 낮아졌다가 DAT 5~6(87~98%)에 대조구 수준으로 회복'),
- ('콩:',' 침수 종료 6일 후(DAT 9)에도 52%였고 DAT 17 86%, DAT 23 99%에 회복')])
+set_paras2(byname(s,'Recovery text'),[('로메인:',' 침수 DAT 3에 대조구의 10%까지 낮아졌다가 DAT 5~6(89~98%)에 대조구 수준으로 회복'),
+ ('콩:',' 침수 종료 6일 후(DAT 9)에도 48%였고 DAT 17 86%, DAT 23 105%로 회복')])
 sv=allnames(s,'Stat value'); sl=allnames(s,'Stat label')
 set_para(sv[0].text_frame.paragraphs[0],'2~3일'); set_para(sl[0].text_frame.paragraphs[0],'로메인: 배수 후 대조구 수준까지 회복')
-set_para(sv[1].text_frame.paragraphs[0],'DAT 9: 52%'); set_para(sl[1].text_frame.paragraphs[0],'콩: 침수 종료 6일 후에도 미회복')
+set_para(sv[1].text_frame.paragraphs[0],'DAT 9: 48%'); set_para(sl[1].text_frame.paragraphs[0],'콩: 침수 종료 6일 후에도 미회복')
 conc(s,'같은 3일 침수에도 로메인은 배수 2~3일 만에 회복, 콩은 DAT 9까지 회복되지 않음')
-foot(s,'각 처리 g_{sw} ÷ 같은 날 대조구 g_{sw} × 100 (PAR·기온 보정 일평균). * 대조 vs 처리 P<0.05(Welch t, Holm 보정). 건조·복합은 회색. 콩 DAT 10~16은 측정 없음, 콩 건조·복합은 DAT 17부터 측정.')
-notes(s,'(약 50초) 각 처리구의 기공전도도를 같은 날 대조구에 대한 비율로 나타낸 그래프입니다. 건조와 복합은 회색으로 두고 침수 위주로 설명하겠습니다. 로메인 상추는 침수 3일째 10%까지 떨어졌지만 배수 후 2~3일, 즉 DAT 5~6에 대조구 수준으로 회복했습니다. 콩은 DAT 9에도 52%로 회복되지 않았고 DAT 17 이후에야 대조구에 가까워졌습니다.')
+foot(s,'각 처리 g_{sw} ÷ 같은 날 대조구 g_{sw} × 100 (PAR·기온 보정 이전 일평균). * 대조 vs 처리 P<0.05(Welch t, Holm 보정). 건조·복합은 회색. 콩 DAT 10~16은 측정 없음, 콩 건조·복합은 DAT 17부터 측정.')
+notes(s,'(약 50초) 각 처리구의 기공전도도를 같은 날 대조구에 대한 비율로 나타낸 그래프입니다. 건조와 복합은 회색으로 두고 침수 위주로 설명하겠습니다. 로메인 상추는 침수 3일째 10%까지 떨어졌지만 배수 후 2~3일, 즉 DAT 5~6에 대조구 수준으로 회복했습니다. 콩은 DAT 9에도 48%로 회복되지 않았고 DAT 17 이후에야 대조구에 가까워졌습니다.')
 
 # ===== 11 PhiPSII
 s=S(11); title(s,'LI-600 : 광계 II 양자수율 (Φ_{PSII})')
@@ -219,7 +239,7 @@ notes(s,'(약 35초) 두 번째 단계인 명반응입니다. P2 구간은 광�
 
 # ===== 13 photosynthetic capacity
 s=S(13); title(s,'LI-6800 : 광합성 능력 (V_{cmax}, J_{max}, R_{d}, A–PPFD)')
-replace_picture(s,byname(s,'Picture 13'),img(F3+'params.png'),valign='top',maxh=3.2,maxw=7.7)
+replace_picture(s,byname(s,'Picture 13'),img(F3+'params.png'),valign='top',maxh=3.0,maxw=7.2)
 shp=[x for x in s.shapes if getattr(x,'has_table',False) and x.has_table][0]; t=shp.table
 for _ in range(2):
     for tr in t._tbl.tr_lst:
@@ -240,11 +260,11 @@ for c_i,(cr,pa) in enumerate(cols,start=1): set_cell(t.cell(1,c_i),g(cr,pa,'ETc'
 for r_i,(tr,nm) in enumerate(zip(['ETc','ETc50','침수ETc','침수ETc50'],['Control','Drought','Waterlogging','Combined']),start=2):
     set_cell(t.cell(r_i,0),nm)
     for c_i,(cr,pa) in enumerate(cols,start=1): set_cell(t.cell(r_i,c_i),g(cr,pa,tr))
-set_widths(shp,[1.45,1.0,1.0,1.0,1.05,1.05,1.0])
+set_widths(shp,[1.4,0.95,0.95,0.95,1.0,1.0,0.95],0.255); shp.left=Inches(0.5); shp.top=Inches(4.5)
 set_paras2(byname(s,'TextBox 10'),[('콩:',' 건조구의 V_{cmax} 68·J_{max} 104가 대조구 90·150보다 낮고, LSP는 건조구가 816으로 대조구 561보다 높음'),
  ('로메인:',' 복합구의 V_{cmax} 73·J_{max} 142가 대조구 104·200보다 낮고, LSP는 처리 간 차이 없음')])
 conc(s,'콩 건조·복합구(9월)와 로메인 복합구(10월)에서 V_{cmax}·J_{max}가 낮은 경향 — 측정일 교락으로 확정은 어려움')
-foot(s,'상자: 사분위(n≥4), 가로선: 평균 ± SE(n<4), 점: 개별 곡선, 문자: Tukey(ANOVA P<0.05일 때만). 곡선: NRH 모형 평균, ▼ = LSP(Q80), 로메인 1,500 초과는 외삽(점선). 콩 9/2~9/17, 로메인 10/16~19 측정으로 처리와 측정일이 교락됨.')
+foot(s,'상자: 사분위(n≥4), 가로선: 평균 ± SE(n<4), 점: 개별 곡선, 문자: Tukey(ANOVA P<0.05일 때만). 곡선: NRH 모형 평균, ▼ = LSP (광포화점), 로메인 1,500 초과는 외삽(점선). 콩 9/2~9/17, 로메인 10/16~19 측정으로 처리와 측정일이 교락됨.')
 notes(s,'(약 35초) 세 번째 단계인 광합성의 생화학적 능력입니다. 콩은 9월 측정에서 건조구와 복합구의 최대 카르복실화 속도와 최대 전자전달 속도가 낮았고, 로메인 상추도 복합구에서 가장 낮은 경향을 보였습니다. 오른쪽 광-광합성 곡선의 역삼각형은 광포화점으로, 콩은 건조구에서 높았고 로메인은 처리 간 차이가 없었습니다. 다만 처리별로 측정일이 달라 측정일과 처리 효과가 섞여 있고 곡선 수도 처리당 3~4개로 적어 확정적으로 말하기는 어렵습니다.')
 
 # ===== 14 yield
@@ -276,7 +296,7 @@ set_widths(tshape,[1.9,1.45,1.45,1.45,1.45],0.255); tshape.left=Inches(0.5); tsh
 set_paras2(byname(s,'Text 요점'),[('로메인:',' 지상부 건물중이 건조 −16%, 침수 −34%, 복합 −43% 감소하고 생체중도 −29·−26·−38% 감소 (DAT 16)'),
  ('콩:',' 100립 생체중은 −5·−9·−1%, 종실 건조중은 −4·−9·−18%로 감소하는 경향이나 처리 간 유의한 차이 없음 (DAT 55)')])
 conc(s,'로메인은 건물중 −16~43% 감소, 콩은 수량 감소 경향이나 유의차 없음')
-foot(s,'표: 평균 (대조구 대비 %), 건조·침수·복합 순. 로메인 10/23(DAT 16) 처리당 8~9주, 콩 10/6(DAT 55, R6~R7) 파괴조사 n=6~9. 그림: 평균 ± SE, 문자 Tukey(ANOVA P<0.05일 때만). 100립 생체중 = 20립 표본 생체중 ÷ 종실 수 × 100.')
+foot(s,'표: 평균 (대조구 대비 %), 건조·침수·복합 순. 로메인 10/23(DAT 16) 처리당 8~9주, 콩 10/6(DAT 55, R6~R7) 파괴조사 n=6~9. 그림: 평균 ± SE, 문자 Tukey(ANOVA P<0.05일 때만). 100립 생체중 = 시료(약 40립) 생체중 환산값, 처리 간 유의차 없음(P=0.23).')
 notes(s,'(약 50초) 네 번째 단계인 생육과 수량입니다. 로메인 상추는 건조구 16%, 침수구 34%, 복합구 43%의 지상부 건물중 감소를 보였습니다. 콩은 종실 건조중, 종실 수, 꼬투리 수와 100립 생체중 모두 처리 간 유의한 차이가 없었습니다. 표에 대조구 대비 감소율을 같이 적었는데, 100립 생체중은 5, 9, 1% 감소로 작았고 종실 건조중은 복합구에서 18%까지 감소하는 경향이 있었습니다. 다만 검출 한계가 약 40~50%이고 뿌리가 포트 밖으로 나간 영향이 있어 근거는 약합니다.')
 
 # ===== 16 summary matrix
@@ -298,7 +318,7 @@ for h,x,(a,b) in zip(heads,X,htxt):
     h.left=Inches(x); h.width=Inches(W); ps=h.text_frame.paragraphs; set_para(ps[0],a); set_para(ps[1],b)
 N,Mi,G,Sg='EFEFEF','D9EAD3','F8CBAD','E97132'
 grid=[ # rows: 로메인 건조, 침수, 복합, 콩 건조, 침수, 복합
- [(['↓ 후반','(DAT 16 39%)'],G),(['–'],N),(['–'],N),(['건물중 −16%'],G)],
+ [(['↓ 후반','(DAT 16 33%)'],G),(['–'],N),(['–'],N),(['건물중 −16%'],G)],
  [(['↓ → 회복','DAT 5~6'],Mi),(['–'],N),(['↓ 경향','(측정일 교락)'],G),(['건물중 −34%'],Sg)],
  [(['↓ → 회복','DAT 6'],Mi),(['–'],N),(['↓ 경향','(V_{cmax} 73)'],G),(['건물중 −43%'],Sg)],
  [(['↓ 지속'],G),(['↓↓ (P2)'],Sg),(['↓ V_{cmax}·J_{max}','(9월)'],G),(['생육 −35%','수량 −4%'],G)],
@@ -340,14 +360,14 @@ def recap_slide(s,crop,ttl,steps,concl,ft,nt):
             ar.fill.solid(); ar.fill.fore_color.rgb=RGBColor.from_string('9AA5AE'); ar.line.fill.background(); ar.shadow.inherit=False
     conc(s,concl); foot(s,ft); notes(s,nt)
 recap_slide(S(17),'bean','고찰 : 콩 (기공 → 명반응 → 광합성 능력 → 수량)',
- [('① 기공','gsw 회복'),('② 명반응','ΦPSII'),('③ 광합성 능력','Vcmax'),('④ 수량','100립 생체중')],
+ [('① 기공','gsw 회복'),('② 명반응','ΦPSII'),('③ 광합성 능력','Vcmax · Jmax'),('④ 수량','100립 생체중')],
  '콩은 생리 지표에서 차이가 있었고, 수량에는 감소하는 경향이 보였지만 큰 차이가 없었다',
- '건조·복합은 회색. Tan et al. 2018 J Plant Physiol; Haverroth et al. 2024 Plant Physiol; Buckley 2019 New Phytol; Yeung et al. 2018 PNAS; Sasidharan et al. 2018 Plant Physiol (참고문헌: 보충 자료 A6)',
- '(약 60초) 먼저 콩입니다. 앞서 본 결과를 논리 순서대로 다시 정리하겠습니다. 침수 직후 기공전도도가 먼저 감소했고 DAT 9에도 대조구의 52%로 회복이 느렸습니다. 뿌리의 저산소는 아쿠아포린 기능과 뿌리 수리전도도를 떨어뜨려 잎의 수분 상태를 악화시키고 기공을 닫는 것으로 보고됩니다. 두 번째로 명반응은 건조구에서 P2에 낮아졌고, 세 번째로 광합성의 생화학적 능력도 건조·복합구에서 낮은 경향이었습니다. 그러나 네 번째 수량은 100립 생체중이 1~9% 감소하는 경향이었으나 큰 차이가 없었습니다. 즉 콩은 생리 지표에서는 차이가 있었지만 수량으로는 이어지지 않았습니다. 개화기 처리 후 55일의 회복 기간 동안 보상이 있었을 가능성이 있으나 이는 가설입니다.')
+ '기공·수량 그래프의 건조·복합은 회색. Tan et al. 2018 J Plant Physiol; Haverroth et al. 2024 Plant Physiol; Buckley 2019 New Phytol; Yeung et al. 2018 PNAS; Sasidharan et al. 2018 Plant Physiol (참고문헌: 보충 자료 A6)',
+ '(약 60초) 먼저 콩입니다. 앞서 본 결과를 논리 순서대로 다시 정리하겠습니다. 침수 직후 기공전도도가 먼저 감소했고 DAT 9에도 대조구의 48%로 회복이 느렸습니다. 뿌리의 저산소는 아쿠아포린 기능과 뿌리 수리전도도를 떨어뜨려 잎의 수분 상태를 악화시키고 기공을 닫는 것으로 보고됩니다. 두 번째로 명반응은 건조구에서 P2에 낮아졌고, 세 번째로 광합성의 생화학적 능력도 건조·복합구에서 낮은 경향이었습니다. 그러나 네 번째 수량은 100립 생체중이 1~9% 감소하는 경향이었으나 큰 차이가 없었습니다. 즉 콩은 생리 지표에서는 차이가 있었지만 수량으로는 이어지지 않았습니다. 개화기 처리 후 55일의 회복 기간 동안 보상이 있었을 가능성이 있으나 이는 가설입니다.')
 recap_slide(S(34),'lettuce','고찰 : 로메인 상추 (기공 → 명반응 → 광합성 능력 → 건물중)',
- [('① 기공','gsw 회복'),('② 명반응','ΦPSII'),('③ 광합성 능력','Vcmax'),('④ 생육','지상부 건물중')],
+ [('① 기공','gsw 회복'),('② 명반응','ΦPSII'),('③ 광합성 능력','Vcmax · Jmax'),('④ 생육','지상부 건물중')],
  '로메인 상추는 회복이 빨랐지만 침수 기간 동안의 손실이 유지됨',
- '건조·복합은 회색. Körner 2015 Curr Opin Plant Biol 25:107; Tardieu et al. 2018 Annu Rev Plant Biol; Haverroth et al. 2024 Plant Physiol (참고문헌: 보충 자료 A6)',
+ '기공·수량 그래프의 건조·복합은 회색. Körner 2015 Curr Opin Plant Biol 25:107; Tardieu et al. 2018 Annu Rev Plant Biol; Haverroth et al. 2024 Plant Physiol (참고문헌: 보충 자료 A6)',
  '(약 60초) 다음은 로메인 상추입니다. 침수 3일째 기공전도도가 대조구의 10%까지 떨어졌지만 배수 후 2~3일 만에 대조구 수준으로 회복했습니다. 명반응은 처리 간 차이가 없었고, 광합성의 생화학적 능력은 복합구에서만 낮은 경향이었습니다. 그럼에도 지상부 건물중은 건조 16%, 침수 34%, 복합 43% 감소했습니다. 식물의 생장은 탄소 공급보다 조직 성장과 세포 팽압이 먼저 제한되는 경우가 많아, 침수 기간 동안 생긴 생장 손실이 회복 후에도 유지된 것으로 해석됩니다. 로메인은 영양생장기에 처리했고 수확물이 지상부라 이 손실이 곧 수량 손실입니다.')
 
 # ===== 18 conclusion
@@ -356,7 +376,7 @@ for _n in ('Card 향후 계획','Header 향후 계획','Future step','Down'):
     for _x in allnames(s,_n): rm(_x)
 cs=allnames(s,'Concl')
 for _x in cs: _x.width=Inches(10.8)
-set_para(cs[0].text_frame.paragraphs[0],'기공 회복 속도'); set_para(cs[0].text_frame.paragraphs[1],'침수는 두 작물 모두에서 기공전도도를 먼저 낮췄다. 로메인은 배수 2~3일 후(DAT 5~6) 대조구 수준으로 회복했고, 콩은 배수 6일 후(DAT 9)에도 대조구의 52%였으며 DAT 23에 회복이 확인되었다.')
+set_para(cs[0].text_frame.paragraphs[0],'기공 회복 속도'); set_para(cs[0].text_frame.paragraphs[1],'침수는 두 작물 모두에서 기공전도도를 먼저 낮췄다. 로메인은 배수 2~3일 후(DAT 5~6) 대조구 수준으로 회복했고, 콩은 배수 6일 후(DAT 9)에도 대조구의 48%였으며 DAT 23에 회복이 확인되었다.')
 set_para(cs[1].text_frame.paragraphs[0],'명반응과 광합성 능력'); set_para(cs[1].text_frame.paragraphs[1],'로메인은 Φ_{PSII}에 처리 차이가 없었고 V_{cmax}·J_{max}는 복합구에서 낮은 경향(측정일 교락)이었다. 콩은 건조구에서 Φ_{PSII}(P2)와 V_{cmax}·J_{max}가 낮았다.')
 set_para(cs[2].text_frame.paragraphs[0],'생육·수량'); set_para(cs[2].text_frame.paragraphs[1],'로메인은 기공이 회복되었는데도 침수 기간의 손실이 유지되어 지상부 건물중이 감소했다(건조 −16%, 침수 −34%, 복합 −43%). 콩은 수량(100립 생체중)이 1~9% 감소하는 경향이었으나 처리 간 유의한 차이는 없었다.')
 conc(s,'로메인은 회복이 빠르나 생육 감소, 콩은 회복이 느리나 수량 차이 작음 — 반응은 작물마다 다름')
@@ -439,5 +459,8 @@ cur={ids[i-1]:i for i in order}
 newlist=[ids[i-1] for i in order]
 for x in list(sld): sld.remove(x)
 for x in newlist: sld.append(x)
-for _s in prs.slides: fix_timing(_s)
-prs.save('oral/oral_v2.pptx'); print('saved',len(prs.slides))
+for _s in prs.slides:
+    for _sh in _s.shapes:
+        if getattr(_sh,'has_table',False) and _sh.has_table: bottom_border(_sh.table)
+    fix_timing(_s)
+prs.save('oral/oral_v3.pptx'); print('saved',len(prs.slides))

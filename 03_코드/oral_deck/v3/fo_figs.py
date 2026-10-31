@@ -25,50 +25,58 @@ def env():
     save(fig,'env.png',(0,0,1,0.88))
 # ---------- irrigation + cumulative transpiration
 def cum():
-    S=pd.read_csv('intermediate/soy_daily_et.csv'); G=pd.read_csv('intermediate/romaine_daily_et.csv')
+    import openpyxl
     fig,axs=plt.subplots(1,3,figsize=(7.7,3.0),dpi=300,gridspec_kw={'width_ratios':[0.8,1.2,1.0]})
     ax=axs[0]; xx=np.arange(3); irr={'bean':[40,87,44],'lettuce':[43,56,37]}
     for i,crop in enumerate(['lettuce','bean']):
         xs=xx+(i-0.5)*0.38; ax.bar(xs,irr[crop],0.36,color=ACC[crop])
         for xi,v in zip(xs,irr[crop]): ax.text(xi,v+2,f'{v}',ha='center',fontsize=7)
     ax.set_xticks(xx,['Dr.','Wl.','Comb.'],fontsize=7.5); ax.set_ylim(0,112); ax.set_ylabel('Cumulative irrigation (% of control)',fontsize=7.5)
-    ax=axs[1]; ax.axvspan(0,3,color=FLOOD,lw=0); out={}
-    for t in ['ETc','ETc50','침수ETc']:
-        g=S[S.처리==t].sort_values('DAT').set_index('DAT').g; full=g.reindex(range(int(g.index.min()),int(g.index.max())+1)).interpolate()
-        cs=full.cumsum()/1000; out[('bean',t)]=cs.iloc[-1]; c=CROPC['bean'][t]
-        ax.plot(cs.index,cs.values,color=c,ls=LS[t],lw=1.5)
-    ax.set_xlabel('Days after waterlogging start (DAT)'); ax.set_ylabel('Cumulative transpiration (kg·pot$^{-1}$)',fontsize=7.5)
-    ax=axs[2]; ax.axvspan(0,3,color=FLOOD,lw=0)
+    # soybean: load-cell irrigation 8/16-10/6 (DAT 4-55), mm x 38.01 g/mm
+    d=pd.read_csv(R+'data/23_밭콩_일별_관수량_마스터시트17.csv',encoding='utf-8-sig'); d=d[d['Scored (Aug 16-)'].astype(str).str.startswith('Yes')&(d.Date<='2026-10-06')]
+    p_=d.pivot_table(index='Date',columns='Treatment',values='Load cell irrigation (mm)',aggfunc='sum'); p_.index=(pd.to_datetime(p_.index)-pd.Timestamp('2026-08-12')).days
+    mp={'ETc':'ETc 100%','ETc50':'ETc 50%','침수ETc':'Flooding-ETc 100%','침수ETc50':'Flooding-ETc 50%'}
+    ax=axs[1]; flood_span(ax); out={}
     for t in ORDER:
-        g=G[(G.처리==t)&(G.DAT>=6)].sort_values('DAT').set_index('DAT')['mean']; cs=g.cumsum(); out[('lettuce',t)]=cs.iloc[-1]; c=CROPC['lettuce'][t]
-        ax.plot(cs.index,cs.values,color=c,ls=LS[t],lw=1.5)
-    ax.set_xlabel('DAT'); ax.set_ylabel('Cumulative transpiration (g·pot$^{-1}$)',fontsize=7.5)
+        cs=(p_[mp[t]]*38.01/1000).cumsum(); out[('bean',t)]=cs.iloc[-1]; ax.plot(cs.index,cs.values,color=CROPC['bean'][t],ls=LS[t],lw=1.5)
+    ax.set_xlabel('Days after waterlogging start (DAT)'); ax.set_ylabel('Cumulative irrigation (kg·pot$^{-1}$)',fontsize=7.5)
+    # romaine: 10/12-10/22 (DAT 5-15); control = load-cell mean irrigation, others = irrigation sheet
+    def sh(f,n):
+        ws=openpyxl.load_workbook(R+f,data_only=True,read_only=True)[n]; X=[r for r in ws.iter_rows(values_only=True) if any(x is not None for x in r)]; return pd.DataFrame(X[1:],columns=X[0])
+    f2='증산량/증산량_로메인상추_1011-1023.xlsx'
+    b=sh(f2,'관수량(ETc50,침ETc,침50)'); b['d']=pd.to_datetime(b['날짜']); b['g']=pd.to_numeric(b['관수량(g)'],errors='coerce'); b=b[b.d<='2026-10-22']
+    c=sh(f2,'로드셀관수량(ETc)'); c['d']=pd.to_datetime(c['날짜']); c=c[c.d<='2026-10-22']
+    ser={'ETc':c.set_index('d')['평균관수량(g)'].astype(float),'ETc50':b[b.Treatment=='ETc 50'].groupby('d').g.mean(),'침수ETc':b[b.Treatment=='침수 ETc'].groupby('d').g.mean(),'침수ETc50':b[b.Treatment=='침수50'].groupby('d').g.mean()}
+    ax=axs[2]; flood_span(ax)
+    for t in ORDER:
+        s=ser[t].fillna(0); s.index=(s.index-pd.Timestamp('2026-10-07')).days; cs=s.cumsum(); out[('lettuce',t)]=cs.iloc[-1]; ax.plot(cs.index,cs.values,color=CROPC['lettuce'][t],ls=LS[t],lw=1.5)
+    ax.set_xlim(0,16); ax.set_xlabel('DAT'); ax.set_ylabel('Cumulative irrigation (g·pot$^{-1}$)',fontsize=7.5)
     print({k:round(v,1) for k,v in out.items()})
-    pd.Series({f'{a}_{b}':v for (a,b),v in out.items()}).to_csv('intermediate/cum_et_final.csv')
-    legend2(fig,E_trt(('bean','lettuce'))+E_crops(),3,fontsize=7.5)
+    legend2(fig,E_crops()+E_trt(('bean','lettuce')),3,fontsize=7.5)
     save(fig,'irr_cum.png',(0,0,1,0.84))
-# ---------- recovery (gray drought/combined)
+
 def rec_ax(ax,crop,ylim=None,lw=1.5):
-    r=pd.read_csv(f'intermediate/recovery3_{crop}.csv'); ax.axvspan(0,3,color=FLOOD,lw=0); ax.axhline(100,color='0.45',lw=0.8,ls='--')
+    r=pd.read_csv(f'intermediate/recovery_raw_{crop}.csv'); flood_span(ax); ax.axhline(100,color='0.45',lw=0.8,ls='--')
     for t in ['침수ETc','ETc50','침수ETc50']:
-        g=r[r.처리==t].sort_values('DAT'); col=GRAY.get(t,CROPC[crop][t]); fil=t=='침수ETc'
-        kw=dict(color=col,ls=LS[t],lw=lw,marker=MK[t],ms=4.2,mfc=col if fil else 'white',mec=col,mew=1.1)
+        g=r[r.처리==t].sort_values('DAT'); gr=t in GRAY; col=GRAY[t] if gr else CROPC[crop][t]; fil=t=='침수ETc'
+        kw=dict(color=col,ls=LS[t],lw=GLW if gr else lw,marker=MK[t],ms=GMS if gr else 4.2,mfc=col if fil else 'white',mec=col,mew=0.8 if gr else 1.1,zorder=2 if gr else 3)
         if crop=='bean' and t=='침수ETc':
             e=g.DAT<=9; ax.plot(g.DAT[e],g.ratio[e],**kw); ax.plot([9,17],[g[g.DAT==9].ratio.iloc[0],g[g.DAT==17].ratio.iloc[0]],':',color=col,lw=1.2); ax.plot(g.DAT[~e],g.ratio[~e],**kw)
         else: ax.plot(g.DAT,g.ratio,**kw)
-        for _,rw in g[g.pH<0.05].iterrows(): ax.text(rw.DAT,rw.ratio-14,'*',ha='center',color=col,fontsize=10,fontweight='bold')
+        for _,rw in g[g.pH<0.05].iterrows(): ax.text(rw.DAT,rw.ratio-14,'*',ha='center',color=col if not gr else '#9A9A9A',fontsize=9 if gr else 10,fontweight='bold')
     ax.set_ylim(0,200 if crop=='bean' else 190); ax.set_xlabel('Days after waterlogging start (DAT)')
+
 def rec_handles():
     h=[(tuple(Line2D([],[],color=CROPC[c]['침수ETc'],lw=1.6,ls=LS['침수ETc'],marker='s',ms=5.5) for c in ('bean','lettuce')),'Waterlogging'),
-       (Line2D([],[],color=GRAY['ETc50'],lw=1.6,marker='o',ms=5.5,mfc='white',mew=1.3),'Drought'),
-       (Line2D([],[],color=GRAY['침수ETc50'],lw=1.6,ls=LS['침수ETc50'],marker='s',ms=5.5,mfc='white',mew=1.3),'Combined'),
-       (Line2D([],[],color='0.45',lw=0.9,ls='--'),'Control (100%)'),(Patch(color=FLOOD),'Waterlogging period')]
+       (Line2D([],[],color=GRAY['ETc50'],lw=1.2,marker='o',ms=4,mfc='white',mew=0.9),'Drought'),
+       (Line2D([],[],color=GRAY['침수ETc50'],lw=1.2,ls=LS['침수ETc50'],marker='s',ms=4,mfc='white',mew=0.9),'Combined'),
+       (Line2D([],[],color='0.45',lw=0.9,ls='--'),'Control (100%)'),E_flood()]
     return h
 def rec():
     fig,axs=plt.subplots(1,2,figsize=(7.7,3.5),dpi=300,gridspec_kw={'width_ratios':[1.5,1]})
     for ax,crop in zip(axs,['bean','lettuce']): rec_ax(ax,crop)
     axs[0].set_ylabel('g$_{sw}$ (% of control)')
-    legend2(fig,rec_handles()+E_crops(),4,fontsize=7.5); save(fig,'recovery.png',(0,0,1,0.86))
+    legend2(fig,E_crops()+rec_handles(),4,fontsize=7.5); save(fig,'recovery.png',(0,0,1,0.86))
 # ---------- parameters 2x4 with A-PPFD and LSP
 def box_strip(ax,x,vals,c,filled,w=0.62):
     vals=np.asarray(vals,float); vals=vals[~np.isnan(vals)]
@@ -113,8 +121,6 @@ def params(gray=False):
             y=np.mean([nrh(I,*row) for row in s[['alpha','theta','Pgmax','Rd']].values],axis=0)
             k15=I<=1500; ax.plot(I[k15],y[k15],color=c,ls=ls_,lw=1.3)
             if crop=='lettuce': ax.plot(I[I>=1500],y[I>=1500],color=c,ls=':',lw=1.1)
-            m_=m_[m_.index<=1500]
-            ax.errorbar(m_.index,m_['mean'],m_['sem'],fmt=mk,color=c,ms=3,capsize=1,lw=0.7,mfc=c if fil else 'white',mec=c)
             q=s.LSP_Q80.mean(); ax.plot([q],[np.interp(q,I,y)],marker='v',color=c,ms=7,mec='white',mew=0.6,zorder=5)
         ax.axhline(0,color='0.8',lw=0.6); ax.tick_params(labelsize=6.5); ax.set_ylabel('A (µmol CO$_2$ m$^{-2}$ s$^{-1}$)',fontsize=7)
         if i==1: ax.set_xlabel('PPFD (µmol m$^{-2}$ s$^{-1}$)',fontsize=7)
@@ -122,7 +128,7 @@ def params(gray=False):
         s=st[(st.작물==crop)&(st.지표=='LSP_Q80')].set_index('처리')
         for t in ORDER: tbl.append((crop,'LSP',t,s.loc[t,'평균'],s.loc[t,'Tukey'] if s.ANOVA_P.iloc[0]<0.05 else '',s['처리전_평균'].iloc[0]))
     ents=[(Line2D([],[],color=C('bean','ETc') if False else '0.3',lw=0),'')]
-    ents=E_trt(('bean','lettuce'),line=False,gray=gray)+[(Line2D([],[],color=PREC,marker='x',ls='--',lw=1.2),'Pre-treatment'),(Line2D([],[],color='0.3',marker='v',ls='none',ms=7),'LSP (Q80)')]+E_crops()
+    ents=E_crops()+E_trt(('bean','lettuce'),line=False,gray=gray)+[(Line2D([],[],color=PREC,marker='x',ls='--',lw=1.2),'Pre-treatment'),(Line2D([],[],color='0.3',marker='v',ls='none',ms=7),'LSP')]
     legend2(fig,ents,4,fontsize=7); fig.tight_layout(rect=(0,0,1,0.88),w_pad=0.8,h_pad=0.6)
     fig.savefig(FD+('params_gray.png' if gray else 'params.png')); plt.close(fig)
     pd.DataFrame(tbl,columns=['crop','par','trt','mean','letter','pre']).to_csv('intermediate/params_table.csv',index=False)
@@ -153,28 +159,32 @@ def yieldfig():
         rows.append([crop,lab]+[round(m,2) for m in ms]+[round((m/ms[0]-1)*100,1) for m in ms[1:]]+[round(P,4)])
     pd.DataFrame(rows,columns=['crop','var','ETc','ETc50','침수ETc','침수ETc50','d_ETc50','d_침수','d_복합','P']).to_csv('intermediate/yield_table.csv',index=False); print(pd.DataFrame(rows).to_string())
     hs=[(tuple(Patch(color=CROPC[c][t]) if FILLED[t] else Patch(facecolor='white',edgecolor=CROPC[c][t],lw=1.4,hatch='////' if t=='침수ETc50' else None) for c in ('bean','lettuce')),NAME[t]) for t in ORDER]
-    legend2(fig,hs+E_crops(),3,fontsize=7.5,hl=2.0)
+    legend2(fig,E_crops()+hs,3,fontsize=7.5,hl=2.0)
     for h in fig.legends[0].legend_handles[:0]: pass
     fig.tight_layout(rect=(0,0,1,0.76),w_pad=0.6); fig.savefig(FD+'yield.png'); plt.close(fig)
 # ---------- recap per crop
 def recap(crop):
-    b,r=yield_data(); fig,axs=plt.subplots(1,4,figsize=(12.2,3.4),dpi=300)
-    rec_ax(axs[0],crop); axs[0].set_ylabel('g$_{sw}$ (% of control)'); 
-    ts_axes(axs[1],crop,'phi','Φ$_{PSII}$',gray=True); axs[1].set_ylabel('Φ$_{PSII}$')
+    b,r=yield_data(); fig=plt.figure(figsize=(12.2,3.6),dpi=300); gs=fig.add_gridspec(1,4,wspace=0.32,left=0.055,right=0.995,top=0.86,bottom=0.15)
+    a0=fig.add_subplot(gs[0]); a1=fig.add_subplot(gs[1]); sg=gs[2].subgridspec(2,1,hspace=0.18); a2=fig.add_subplot(sg[0]); a3=fig.add_subplot(sg[1]); a4=fig.add_subplot(gs[3])
+    rec_ax(a0,crop); a0.set_ylabel('g$_{sw}$ (% of control)')
+    ts_axes(a1,crop,'phi','Φ$_{PSII}$',gray=False); a1.set_ylabel('Φ$_{PSII}$')
     dd=pd.read_csv('data/06_ACi_파라미터.csv'); dd['date']=dd['date'].astype(str); dd=dd[dd.단계.str.replace(' ','')=='처리후']
     dd=dd[((dd.작물=='bean')&(dd.date>='2026-09-01'))|((dd.date>='2026-10-16')&(dd.date<='2026-10-19'))]
     if '제외' in dd: dd=dd[dd['제외']!=True]
-    ax=axs[2]; ps=pd.read_csv('intermediate/param_stats.csv'); ps=ps[(ps.파라미터=='Vcmax')&(ps.작물==crop)].set_index('처리'); tops=[]
-    for k,t in enumerate(ORDER,1): tops.append(box_strip(ax,k,dd[(dd.작물==crop)&(dd.처리==t)].Vcmax.dropna().values,GRAY.get(t,CROPC[crop][t]),FILLED[t],0.66))
-    for k,t in enumerate(ORDER,1):
-        if ps.ANOVA_P.iloc[0]<0.05: ax.text(k,max(tops)*1.05,ps.loc[t,'Tukey'],ha='center',fontsize=8)
-    ax.set_ylim(0,max(tops)*1.25); ax.set_xticks([]); ax.set_ylabel('V$_{cmax}$ (µmol m$^{-2}$ s$^{-1}$)')
+    ps=pd.read_csv('intermediate/param_stats.csv')
+    for ax,par,lab in [(a2,'Vcmax','V$_{cmax}$'),(a3,'Jmax','J$_{max}$')]:
+        q=ps[(ps.파라미터==par)&(ps.작물==crop)].set_index('처리'); tops=[]
+        for k,t in enumerate(ORDER,1): tops.append(box_strip(ax,k,dd[(dd.작물==crop)&(dd.처리==t)][par].dropna().values,CROPC[crop][t],FILLED[t],0.66))
+        if q.ANOVA_P.iloc[0]<0.05:
+            for k,t in enumerate(ORDER,1): ax.text(k,max(tops)*1.04,q.loc[t,'Tukey'],ha='center',fontsize=8)
+        ax.set_ylim(0,max(tops)*1.25); ax.set_xticks([]); ax.set_ylabel(lab+' (µmol m$^{-2}$ s$^{-1}$)',fontsize=7.5); ax.tick_params(labelsize=7)
     if crop=='bean': vals={t:b.loc[b.처리==t,'hs'].dropna() for t in ORDER}; lab='100-seed FW (g)'
     else: vals={t:r.loc[r.처리==t,'지상부건조중_전체'].dropna() for t in ORDER}; lab='Shoot DW (g·plant$^{-1}$)'
-    bars(axs[3],vals,crop,lab,gray=True); axs[3].set_ylabel(lab,fontsize=8)
-    ents=[(tuple(Line2D([],[],color=CROPC[crop]['ETc'],marker='o',lw=1.6) for _ in [0]),'Control'),(Line2D([],[],color=CROPC[crop]['침수ETc'],marker='s',ls=LS['침수ETc'],lw=1.6),'Waterlogging'),
-          (Line2D([],[],color=GRAY['ETc50'],marker='o',mfc='white',lw=1.6),'Drought'),(Line2D([],[],color=GRAY['침수ETc50'],marker='s',mfc='white',ls=LS['침수ETc50'],lw=1.6),'Combined')]
-    legend2(fig,ents,4,fontsize=8.5,hl=3.0,cs=2.5); fig.tight_layout(rect=(0,0,1,0.9),w_pad=1.6); fig.savefig(FD+f'recap_{crop}.png'); plt.close(fig)
+    bars(a4,vals,crop,lab,gray=True); a4.set_ylabel(lab,fontsize=8)
+    def hd(t,gray): 
+        c=GRAY[t] if gray else CROPC[crop][t]; return Line2D([],[],color=c,marker=MK[t],mfc=c if FILLED[t] else 'white',ls=LS[t],lw=1.6 if not gray else 1.1,ms=5.5 if not gray else 4)
+    ents=[(hd('ETc',False),'Control'),(hd('침수ETc',False),'Waterlogging'),((hd('ETc50',True),hd('ETc50',False)),'Drought'),((hd('침수ETc50',True),hd('침수ETc50',False)),'Combined')]
+    legend2(fig,ents,4,fontsize=8.5,hl=3.0,cs=2.5); fig.savefig(FD+f'recap_{crop}.png'); plt.close(fig)
 
 def aq():
     d=pd.read_csv('data/09_LI6800_광곡선_개별점.csv'); d=d.dropna(subset=['Qin','A']); d['Q']=d.Qin.round(-1)
@@ -189,7 +199,7 @@ def aq():
             ax.errorbar(m.Q,m['mean'],m['sem'],color=c,mec=c,lw=1.3,capsize=1.5,elinewidth=0.7,**kw)
         ax.set_xlabel('PPFD (µmol m$^{-2}$ s$^{-1}$)'); 
         if crop=='bean': ax.set_ylabel('A (µmol CO$_2$ m$^{-2}$ s$^{-1}$)')
-    legend2(fig,E_trt(('bean','lettuce'))+[E_pre()]+E_crops(),4,fontsize=7.2); save(fig,'aq.png',(0,0,1,0.85))
+    legend2(fig,E_crops()+E_trt(('bean','lettuce'))+[E_pre()],4,fontsize=7.2); save(fig,'aq.png',(0,0,1,0.85))
 if __name__=='__main__':
     import sys
     for f in (sys.argv[1:] or ['env','cum','rec','params','yieldfig','recap','aq']):

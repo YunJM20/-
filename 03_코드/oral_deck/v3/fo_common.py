@@ -12,7 +12,7 @@ ACC={'lettuce':'#2E6B3F','bean':'#6B4226'}; CN={'lettuce':'Romaine','bean':'Soyb
 MK={'ETc':'o','ETc50':'o','침수ETc':'s','침수ETc50':'s'}; FILLED={'ETc':True,'ETc50':False,'침수ETc':True,'침수ETc50':False}
 LS={'ETc':'-','ETc50':'-','침수ETc':(0,(4,1.6)),'침수ETc50':(0,(4,1.6))}
 PREC='#9A9A9A'; CLOUDC='#E9E9E9'
-GRAY={'ETc50':'#A8A8A8','침수ETc50':'#6F6F6F'}   # 10p: 건조·복합 = 회색
+GRAY={'ETc50':'#CBCBCB','침수ETc50':'#B0B0B0'}; GLW=0.9; GMS=3.0   # 10p: 건조·복합 = 회색
 plt.rcParams.update({'font.family':'DejaVu Sans','font.size':8.5,'axes.spines.top':False,'axes.spines.right':False,'axes.linewidth':0.8,
   'xtick.major.width':0.8,'ytick.major.width':0.8,'legend.frameon':False})
 def col(crop,t): return CROPC[crop][t]
@@ -35,16 +35,18 @@ def rowwise(hs,ls,ncol):
 def E_trt(crops,trts=ORDER,line=True,gray=False): return [(handle(crops,t,line,gray),NAME[t]) for t in trts]
 E_pre=lambda: (Line2D([],[],color=PREC,lw=1.2,ls='--',marker='x',ms=5),'Pre-treatment')
 E_cloud=lambda: (Patch(color=CLOUDC),'Cloudy (CI<0.5)')
-E_flood=lambda: (Patch(color='#D2D2D2'),'Waterlogging period')
+FLOODKW=dict(facecolor='#F4F4F4',edgecolor='#A8A8A8',hatch='////',linewidth=0)
+E_flood=lambda: (Patch(facecolor='#F4F4F4',edgecolor='#A8A8A8',hatch='////',linewidth=0),'Waterlogging period')
+def flood_span(ax,x0=0,x1=3): ax.axvspan(x0,x1,zorder=0,**FLOODKW)
 E_crops=lambda crops=('bean','lettuce'): [(Patch(color=ACC[c]),CN[c]) for c in crops]
 def legend2(fig,ents,ncol,fontsize=7.2,y=1.0,hl=2.6,cs=1.1,tup=True):
     H,L=rowwise([e[0] for e in ents],[e[1] for e in ents],ncol)
     fig.legend(H,L,loc='upper center',bbox_to_anchor=(0.5,y),ncol=ncol,fontsize=fontsize,handler_map={tuple:HandlerTuple(ndivide=None,pad=0.3)},handlelength=hl,columnspacing=cs,handletextpad=0.5,labelspacing=0.35)
-A04=pd.read_csv('intermediate/daily_stats.csv'); A04=A04[~((A04.작물=='lettuce')&(A04.DAT<1))]
+A04=pd.read_csv('intermediate/daily_stats.csv'); A04=A04[A04.지표!='gsw']; A04=pd.concat([A04,pd.read_csv('intermediate/daily_gsw_raw.csv')],ignore_index=True); A04=A04[~((A04.작물=='lettuce')&(A04.DAT<1))]
 PRE=pd.read_csv('data/02b_LI600_처리전_개별측정.csv'); PRECOL={'gsw':'gsw_해석용','phi':'PhiPS2','fs':'Fs','etr':'ETR'}
 def ts_axes(ax,crop,ind,ylab=None,gray=False):
     s=A04[(A04.지표==ind)&(A04.작물==crop)]
-    ax.axvspan(0,3,color='#D2D2D2',lw=0,zorder=0)
+    flood_span(ax)
     for d in s[s.흐림==True].DAT.unique(): ax.axvspan(d-0.45,d+0.45,color=CLOUDC,lw=0,zorder=0)
     for t in ORDER:
         g=s[s.처리==t].sort_values('DAT')
@@ -65,7 +67,7 @@ def ts_axes(ax,crop,ind,ylab=None,gray=False):
 def ts_fig2(ind,ylab,fname,size=(7.5,3.0)):
     fig,axs=plt.subplots(1,2,figsize=size,dpi=300,gridspec_kw={'width_ratios':[1.25,1]})
     for ax,crop in zip(axs,['bean','lettuce']): ts_axes(ax,crop,ind,ylab)
-    legend2(fig,E_trt(('bean','lettuce'))+[E_pre()]+[E_cloud(),E_flood()]+E_crops(),5)
+    legend2(fig,E_crops()+E_trt(('bean','lettuce'))+[E_pre(),E_cloud(),E_flood()],5)
     fig.tight_layout(rect=(0,0,1,0.85),w_pad=1.5); fig.savefig('figs2/'+fname); plt.close(fig)
 if __name__=='__main__':
     ts_fig2('gsw','g$_{sw}$ (mol·m$^{-2}$·s$^{-1}$)','ts_gsw.png',size=(7.5,3.0))
