@@ -58,7 +58,7 @@ def set_widths(shape,widths,rowh=None):
         for r in t.rows: r.height=Inches(rowh)
         shape.height=Inches(rowh*len(t.rows))
 
-def bottom_border(table,w=28575):
+def bottom_border(table,w=19050):
     last=table._tbl.tr_lst[-1]
     for tc in last.tc_lst:
         tcPr=tc.get_or_add_tcPr()
@@ -68,6 +68,16 @@ def bottom_border(table,w=28575):
         idx=0
         for i,ch in enumerate(list(tcPr)):
             if ch.tag in (A+'lnL',A+'lnR',A+'lnT'): idx=i+1
+        tcPr.insert(idx,ln)
+    first=table._tbl.tr_lst[0]
+    for tc in first.tc_lst:
+        tcPr=tc.get_or_add_tcPr()
+        for e in tcPr.findall(A+'lnT'): tcPr.remove(e)
+        ln=etree.Element(A+'lnT',w=str(w),cap='flat',cmpd='sng',algn='ctr')
+        sf=etree.SubElement(ln,A+'solidFill'); etree.SubElement(sf,A+'srgbClr',val='000000'); etree.SubElement(ln,A+'prstDash',val='solid')
+        idx=0
+        for i,ch in enumerate(list(tcPr)):
+            if ch.tag in (A+'lnL',A+'lnR'): idx=i+1
         tcPr.insert(idx,ln)
 
 def compact_table(table,size=1050):
@@ -109,7 +119,7 @@ notes(S(2),'(약 30초) 최근 집중호우와 폭염·가뭄이 짧은 간격�
 s=S(3)
 for nm in ('Step 3','Depth arrow'): rm(byname(s,nm))
 steps=[byname(s,'Step %d'%i) for i in (1,2,4,5)]
-labels=[('① 기공','g_{sw}'),('② 명반응','Φ_{PSII}'),('③ 광합성 능력','V_{cmax} · J_{max} · LSP'),('④ 생육·수량','수량 · 지상부 건물중')]
+labels=[('① 기공','g_{sw}'),('② 명반응','Φ_{PSII}'),('③ 광합성 능력','V_{cmax} · J_{max} · A_{max}'),('④ 생육·수량','수량 · 지상부 건물중')]
 for k,(st,(a,b)) in enumerate(zip(steps,labels)):
     ps=st.text_frame.paragraphs; set_para(ps[0],a); set_para(ps[1],b)
     st.left=Inches(0.92+k*2.88); st.top=Inches(1.55+k*0.78)
@@ -152,7 +162,7 @@ rowsd=[('LI-600','기공전도도 · 형광','P1 : 매일 (DAT 1~9)\nP2 : 1~2주
        ('LI-6800','광합성 곡선 (A-Ci, A-PPFD)','P2 : 9월 중순\n(9/2~9/17, DAT 21~36)','P1~P2 : 10월 중순\n(10/16~10/19, DAT 9~12)'),
        ('생육 조사','수량 · 생육','9/1 (DAT 20), 10/6 (DAT 55)','10/23 (DAT 16)')]
 X0=2.10; DX=0.19
-for (y0,bnd,end) in [(2.74,9.5,55),(3.64,10.5,16)]:
+for (y0,bnd,end) in [(2.74,10.5,55),(3.64,10.5,16)]:
     box(X0,y0,DX*bnd,0.22,'P1','5B9BD5',size=10,bold=True); box(X0+DX*bnd,y0,DX*(end-bnd),0.22,'P2','2F5597',size=10,bold=True)
 box(2.1,4.05,4.9,0.4,'콩','6B4226',size=12,bold=True); box(7.15,4.05,5.4,0.4,'로메인 상추','2E6B3F',size=12,bold=True)
 for i,(h,hs,a,b_) in enumerate(rowsd):
@@ -162,7 +172,7 @@ for i,(h,hs,a,b_) in enumerate(rowsd):
     box(7.15,y,5.4,0.44,b_.replace('\n','  /  '),'E8EEF2',fc='1F2D3A',size=11.5)
 byname(s,'Conclusion Box').top=Inches(6.05); byname(s,'Conclusion Box').height=Inches(0.55)
 conc(s,'P1 : 침수 시작 ~ 종료 후 7일 (초기 반응·회복 시작)  ·  P2 : 이후 (회복 후기·건조 영향)')
-foot(s,'콩 침수 8/12~14, 50% 관수는 8/15부터. 로메인 침수 10/7~10/10 오전, 50% 관수 10/12부터. 침수 시작일을 DAT 0으로 맞추어 두 작물을 정렬. P1 = 콩 DAT 1~9, 로메인 DAT 1~10 / P2 = 이후 (침수 종료일이 콩 DAT 2, 로메인 DAT 3이라 P1 종료일이 하루 다름).')
+foot(s,'콩 침수 8/12 오전~8/15 오전, 50% 관수는 8/15부터. 로메인 침수 10/7~10/10 오전, 50% 관수 10/12부터. 침수 시작일을 DAT 0으로 맞추어 두 작물을 정렬. P1 = DAT 1~10 (침수 종료 후 7일) / P2 = 이후 (두 작물 모두 침수 종료는 DAT 3).')
 notes(s,'(약 15초) 두 실험은 시기와 기간이 달라 침수 시작일을 DAT 0으로 맞추어 정렬했습니다. 로메인 상추는 처리 후 16일, 콩은 55일까지 관찰했습니다. LI-600은 초기에는 매일, 이후에는 콩은 1~2주 간격, 로메인은 이틀 간격으로 측정했고 LI-6800 광합성 곡선은 콩은 9월 중순, 로메인은 10월 중순에 측정했습니다. 결과는 침수 시작부터 종료 후 7일까지를 P1, 그 이후를 P2로 나누어 제시합니다.')
 
 # ===== 6 measurement items
@@ -171,14 +181,14 @@ bg=allnames(s,'Row bg'); chip=allnames(s,'Row chip'); ind=allnames(s,'Row ind');
 for g in (bg,chip,ind,met): rm(g[2])
 bg=allnames(s,'Row bg'); chip=allnames(s,'Row chip'); ind=allnames(s,'Row ind'); met=allnames(s,'Row method')
 chips=['① 기공','② 명반응','③ 광합성 능력','④ 생육·수량']
-inds=['g_{sw}','Φ_{PSII}, F_{s}, ETR','V_{cmax}, J_{max}, R_{d}, A–PPFD (LSP)','종실 생체중·건조중, 지상부 건물중']
-mets=['LI-600 포로미터, 처리 개시 후 반복 측정, 보정 gsw (Rizzo & Bailey, 2026)','LI-600 명적응 형광, PAR·기온 보정 (Ali et al., 2025; Gao et al., 2024)','LI-6800 A-Ci (FvCB), 광-광합성 곡선 (NRH 모형, LSP)','파괴 조사 (로메인 DAT 16, 콩 DAT 20·55)']
+inds=['g_{sw}','Φ_{PSII}, F_{s}, ETR','V_{cmax}, J_{max}, R_{d}, A_{max}, α','종실 생체중·건조중, 지상부 건물중']
+mets=['LI-600 포로미터, 처리 개시 후 반복 측정, 보정 gsw (Rizzo & Bailey, 2026)','LI-600 명적응 형광, PAR·기온 보정 (Ali et al., 2025; Gao et al., 2024)','LI-6800 A-Ci (FvCB), 광-광합성 곡선 (NRH 모형)','파괴 조사 (로메인 DAT 16, 콩 DAT 20·55)']
 for k in range(4):
     y=1.50+k*1.08
     for g in (bg,chip,ind,met): g[k].top=Inches(y)
     set_para(chip[k].text_frame.paragraphs[0],chips[k]); set_para(ind[k].text_frame.paragraphs[0],inds[k]); set_para(met[k].text_frame.paragraphs[0],mets[k])
 conc(s,'통계: 침수 × 관수 이원 ANOVA·Tukey (형광 지표는 측정일·PAR·기온 보정 평균)')
-foot(s,'P1 = 침수 시작~종료 후 7일(콩 DAT 1~9, 로메인 DAT 1~10), P2 = 이후. 형광 지표(Φ_{PSII}, F_{s}, ETR) = PAR·기온 보정 평균 (Ali et al., 2025; Gao et al., 2024), g_{sw} = 온도 보정 gsw (Rizzo & Bailey, 2026; PAR·기온 공변량 보정 없음). 생육은 전 개체 사용.')
+foot(s,'P1 = 침수 시작~종료 후 7일(DAT 1~10), P2 = 이후. 형광 지표(Φ_{PSII}, F_{s}, ETR) = PAR·기온 보정 평균 (Ali et al., 2025; Gao et al., 2024), g_{sw} = 온도 보정 gsw (Rizzo & Bailey, 2026; PAR·기온 공변량 보정 없음). 생육은 전 개체 사용.')
 notes(s,'(약 20초) 앞서 제시한 네 단계에 맞추어 지표를 측정했습니다. 기공전도도와 명반응은 LI-600으로 반복 측정했고, 형광 지표는 측정 당시의 광도와 기온 차이를 선행 연구를 따라 공변량으로 보정했고, 기공전도도는 보정하지 않은 값을 사용했습니다. 광합성 능력은 LI-6800의 A-Ci와 광-광합성 곡선으로 평가했고, 생육과 수량은 파괴 조사로 측정했습니다.')
 
 # ===== 33 (new) environment
@@ -257,34 +267,43 @@ foot(s,'표·그림: 측정일·PAR·기온 보정 평균, Tukey 문자. P2는 P
 notes(s,'(약 35초) 두 번째 단계인 명반응입니다. P2 구간은 광도 수준을 나누지 않고 통합하여 분석했습니다. 콩에서는 P1에서 침수구가 대조구보다 약간 낮았고, P2에서는 건조구의 Φ_PSII가 0.61로 대조구 0.70보다 낮았습니다. 로메인 상추는 P1과 P2 모두 처리 간 차이가 없었습니다. 따라서 로메인에서는 기공이 닫혔는데도 명반응은 영향을 받지 않았습니다.')
 
 # ===== 13 photosynthetic capacity
-s=S(13); title(s,'LI-6800 : 광합성 능력 (V_{cmax}, J_{max}, R_{d}, A–PPFD)')
-replace_picture(s,byname(s,'Picture 13'),img(F3+'params.png'),valign='top',maxh=2.85,maxw=7.2)
+s=S(13); title(s,'LI-6800 : 광합성 능력 (V_{cmax}, J_{max}, R_{d}, A_{max}, α)')
+replace_picture(s,byname(s,'Picture 13'),img(F3+'params.png'),valign='top',maxh=2.95,maxw=7.5)
 shp=[x for x in s.shapes if getattr(x,'has_table',False) and x.has_table][0]; t=shp.table
-for _ in range(2):
-    for tr in t._tbl.tr_lst:
-        tr.tc_lst[-1].addnext(copy.deepcopy(tr.tc_lst[-1]))
-    t._tbl.tblGrid.append(copy.deepcopy(t._tbl.tblGrid.findall(A+'gridCol')[-1]))
+while len(t.columns)<6:
+    for tr in t._tbl.tr_lst: tr.tc_lst[-1].addnext(copy.deepcopy(tr.tc_lst[-1]))
+    gcs=t._tbl.tblGrid.findall(A+'gridCol'); gcs[-1].addnext(copy.deepcopy(gcs[-1]))
 pt=pd.read_csv('an/intermediate/params_table.csv')
-def g(crop,par,tr,pre=False):
+FMT={'Vcmax':'{:.0f}','Jmax':'{:.0f}','Rd':'{:.2f}','Amax':'{:.1f}','alpha':'{:.3f}'}
+def pg(crop,par,tr,pre=False):
     q=pt[(pt.crop==crop)&(pt.par==par)&(pt.trt==tr)].iloc[0]
-    if pre: return f'{q.pre:.0f}'
-    lets=pt[(pt.crop==crop)&(pt.par==par)].letter.fillna('')
-    show=len(set(lets))>1
-    return f'{q["mean"]:.0f}'+(f' {q.letter}' if show else '')
-hd=['Treatment','Soy V_{cmax}','Soy J_{max}','Soy LSP','Rom V_{cmax}','Rom J_{max}','Rom LSP']
-for c_i,h in enumerate(hd): set_cell(t.cell(0,c_i),h)
-cols=[('bean','Vcmax'),('bean','Jmax'),('bean','LSP'),('lettuce','Vcmax'),('lettuce','Jmax'),('lettuce','LSP')]
-set_cell(t.cell(1,0),'Pre-treatment'); 
-for c_i,(cr,pa) in enumerate(cols,start=1): set_cell(t.cell(1,c_i),g(cr,pa,'ETc',pre=True))
-for r_i,(tr,nm) in enumerate(zip(['ETc','ETc50','침수ETc','침수ETc50'],['Control','Drought','Waterlogging','Combined']),start=2):
-    set_cell(t.cell(r_i,0),nm)
-    for c_i,(cr,pa) in enumerate(cols,start=1): set_cell(t.cell(r_i,c_i),g(cr,pa,tr))
-set_widths(shp,[1.4,0.95,0.95,0.95,1.0,1.0,0.95],0.255); shp.left=Inches(0.5); shp.top=Inches(4.3)
-set_paras2(byname(s,'TextBox 10'),[('콩:',' 건조구에서 V_{cmax}·J_{max}가 낮았고 LSP는 높았음'),
- ('로메인:',' 복합구에서 V_{cmax}·J_{max}가 낮았고 LSP는 처리 간 차이 없음')])
+    if pre: return FMT[par].format(q.pre)
+    let=q.letter if isinstance(q.letter,str) else ''
+    return FMT[par].format(q['mean'])+(' '+let if let else '')
+PARS=['Vcmax','Jmax','Rd','Amax','alpha']
+def fill_pt(tb,crop,name):
+    hd=[name,'V_{cmax}','J_{max}','R_{d}','A_{max}','α']
+    for c_i,h in enumerate(hd): set_cell(tb.cell(0,c_i),h)
+    set_cell(tb.cell(1,0),'Pre-treat.')
+    for c_i,pa in enumerate(PARS,start=1): set_cell(tb.cell(1,c_i),pg(crop,pa,'ETc',pre=True))
+    for r_i,(tr,nm) in enumerate(zip(['ETc','ETc50','침수ETc','침수ETc50'],['Control','Drought','Waterlog.','Combined']),start=2):
+        set_cell(tb.cell(r_i,0),nm)
+        for c_i,pa in enumerate(PARS,start=1): set_cell(tb.cell(r_i,c_i),pg(crop,pa,tr))
+    for rr in tb._tbl.iter(A+'rPr'): rr.set('sz','1000')
+fill_pt(t,'bean','Soybean')
+el=copy.deepcopy(shp._element); s.shapes._spTree.append(el)
+_nid=max(int(e.get('id')) for e in s.shapes._spTree.iter('{http://schemas.openxmlformats.org/presentationml/2006/main}cNvPr'))+1
+_c=el.find('.//{http://schemas.openxmlformats.org/presentationml/2006/main}cNvPr'); _c.set('id',str(_nid)); _c.set('name','Table P2')
+shp2=[x for x in s.shapes if x._element is el][0]
+fill_pt(shp2.table,'lettuce','Romaine')
+W=[0.9,0.55,0.55,0.66,0.55,0.55]
+set_widths(shp,W,0.255); shp.left=Inches(0.4); shp.top=Inches(4.3)
+set_widths(shp2,W,0.255); shp2.left=Inches(4.2); shp2.top=Inches(4.3)
+set_paras2(byname(s,'TextBox 10'),[('콩:',' 건조구에서 V_{cmax}·J_{max}가 낮았고 A_{max}·α는 처리 간 차이 없음'),
+ ('로메인:',' 복합구에서 V_{cmax}·J_{max}가 낮은 경향이고 A_{max}·α는 처리 간 차이 없음')])
 conc(s,'콩 건조·복합구(9월)와 로메인 복합구(10월)에서 V_{cmax}·J_{max}가 낮은 경향 — 측정일 교락으로 확정은 어려움')
-foot(s,'상자: 사분위(n≥4), 가로선: 평균 ± SE(n<4), 점: 개별 곡선, 문자: Tukey(ANOVA P<0.05일 때만). 곡선: NRH 모형 평균, ▼ = LSP (광포화점), 로메인 1,500 초과는 외삽(점선). 콩 9/2~9/17, 로메인 10/16~19 측정으로 처리와 측정일이 교락됨.')
-notes(s,'(약 35초) 세 번째 단계인 광합성 능력입니다. 콩은 9월 측정에서 건조구와 복합구의 최대 카르복실화 속도와 최대 전자전달 속도가 낮았고, 로메인 상추도 복합구에서 가장 낮은 경향을 보였습니다. 오른쪽 광-광합성 곡선의 역삼각형은 광포화점으로, 콩은 건조구에서 높았고 로메인은 처리 간 차이가 없었습니다. 다만 처리별로 측정일이 달라 측정일과 처리 효과가 섞여 있고 곡선 수도 처리당 3~4개로 적어 확정적으로 말하기는 어렵습니다.')
+foot(s,'상자: 사분위(n≥4), 가로선: 평균 ± SE(n<4), 점: 개별 곡선, 문자: Tukey(ANOVA P<0.05일 때만), x: 처리 전. 콩 9/2~9/17, 로메인 10/16~19 측정으로 처리와 측정일이 교락됨.')
+notes(s,'(약 35초) 세 번째 단계인 광합성 능력입니다. 콩은 9월 측정에서 건조구와 복합구의 최대 카르복실화 속도와 최대 전자전달 속도가 낮았고, 로메인 상추도 복합구에서 가장 낮은 경향을 보였습니다. 암호흡, 최대 광합성 속도, 양자수율은 두 작물 모두 처리 간 차이가 없었습니다. 다만 처리별로 측정일이 달라 측정일과 처리 효과가 섞여 있고 곡선 수도 처리당 3~4개로 적어 확정적으로 말하기는 어렵습니다.')
 
 # ===== 14 yield
 s=S(14); title(s,'생육 조사 : 수량 및 지상부 생육')
@@ -300,8 +319,10 @@ def yrow(lab,i):
     r=yt.iloc[i]; vals=[r.ETc,r.ETc50,r.침수ETc,r.침수ETc50]; d=[None,r.d_ETc50,r.d_침수,r.d_복합]
     fm=(lambda v:f'{v:.1f}') if vals[0]<20 else (lambda v:f'{v:.0f}')
     cells=[]
+    lets=[r.l0,r.l1,r.l2,r.l3]
     for k,(v,dd) in enumerate(zip(vals,d)):
-        cells.append(fm(v) if dd is None else f'{fm(v)} ({pct(-int(abs(dd)+0.5) if dd<0 else int(abs(dd)+0.5))})')
+        lt=(' '+lets[k]) if isinstance(lets[k],str) and lets[k] else ''
+        cells.append(fm(v)+lt if dd is None else f'{fm(v)}{lt} ({pct(-int(abs(dd)+0.5) if dd<0 else int(abs(dd)+0.5))})')
     return [lab]+cells
 rows_data=[['Crop · variable','Control','Drought','Waterlog.','Combined'],['Romaine DAT 16','','','',''],
  yrow('Shoot FW (g)',4),yrow('Shoot DW (g)',5),['Soybean DAT 55','','','',''],
@@ -332,7 +353,7 @@ for c in cells:
     if abs(c.left/914400-5.90)<0.05 or abs(c.left/914400-7.50)<0.05: rm(c)
 cells=allnames(s,'Cell')
 X=[2.70,5.10,7.50,9.90]; W=2.30
-htxt=[('① 기공','g_{sw}'),('② 명반응','Φ_{PSII}'),('③ 광합성','V_{cmax} · J_{max} · LSP'),('④ 생육·수량','대조구 대비 %')]
+htxt=[('① 기공','g_{sw}'),('② 명반응','Φ_{PSII}'),('③ 광합성','V_{cmax} · J_{max}'),('④ 생육·수량','대조구 대비 %')]
 for h,x,(a,b) in zip(heads,X,htxt):
     h.left=Inches(x); h.width=Inches(W); ps=h.text_frame.paragraphs; set_para(ps[0],a); set_para(ps[1],b)
 N,Mi,G,Sg='EFEFEF','D9EAD3','F8CBAD','E97132'
@@ -479,4 +500,4 @@ for _s in prs.slides:
     for _sh in _s.shapes:
         if getattr(_sh,'has_table',False) and _sh.has_table: compact_table(_sh.table); bottom_border(_sh.table)
     fix_timing(_s)
-prs.save('oral/oral_v5.pptx'); print('saved',len(prs.slides))
+prs.save('oral/oral_v6.pptx'); print('saved',len(prs.slides))

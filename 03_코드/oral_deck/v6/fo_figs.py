@@ -92,47 +92,30 @@ def nrh(I,a_,th,Pm,Rd):
     x_=a_*I+Pm; return (x_-np.sqrt(np.maximum(x_*x_-4*th*a_*I*Pm,0)))/(2*th)-Rd
 def params(gray=False):
     D='data/'
-    aci=pd.read_csv(D+'06_ACi_파라미터.csv'); dun=pd.read_csv(D+'08_ACi_AQ_파라미터_Duncan.csv'); pst=pd.read_csv('intermediate/param_stats.csv')
-    aci['date']=aci['date'].astype(str); p_=aci[aci.단계.str.replace(' ','')=='처리후']
-    p_=p_[((p_.작물=='bean')&(p_.date>='2026-09-01'))|((p_.date>='2026-10-16')&(p_.date<='2026-10-19'))]
-    if '제외' in p_: p_=p_[p_['제외']!=True]
-    fits=pd.read_csv('intermediate/fits_flag.csv'); st=pd.read_csv('intermediate/lsp_stats.csv'); Ap=pd.read_csv('intermediate/A_points.csv')
-    C=lambda crop,t: GRAY[t] if (gray and t in GRAY) else CROPC[crop][t]
-    fig,axs=plt.subplots(2,4,figsize=(7.8,3.6),dpi=300,gridspec_kw={'width_ratios':[1,1,1,1.9]})
-    labs=[('Vcmax','V$_{cmax}$'),('Jmax','J$_{max}$'),('Rd','R$_d$')]; tbl=[]
+    aci=pd.read_csv(D+'06_ACi_파라미터.csv'); aq=pd.read_csv(D+'07_AQ_파라미터.csv'); dun=pd.read_csv(D+'08_ACi_AQ_파라미터_Duncan.csv'); pst=pd.read_csv('intermediate/param_stats.csv')
+    def post(df):
+        df=df.copy(); df['date']=df['date'].astype(str); q=df[df.단계.str.replace(' ','')=='처리후']
+        q=q[((q.작물=='bean')&(q.date>='2026-09-01'))|((q.date>='2026-10-16')&(q.date<='2026-10-19'))]
+        return q[q['제외']!=True] if '제외' in q else q
+    src={'Vcmax':post(aci),'Jmax':post(aci),'Rd':post(aci),'Amax':post(aq),'alpha':post(aq)}
+    labs=[('Vcmax','V$_{cmax}$ (µmol m$^{-2}$ s$^{-1}$)'),('Jmax','J$_{max}$ (µmol m$^{-2}$ s$^{-1}$)'),('Rd','R$_d$ (µmol m$^{-2}$ s$^{-1}$)'),('Amax','A$_{max}$ (µmol m$^{-2}$ s$^{-1}$)'),('alpha','α (mol mol$^{-1}$)')]
+    fig,axs=plt.subplots(2,5,figsize=(7.8,3.4),dpi=300); tbl=[]
     for i,crop in enumerate(['bean','lettuce']):
-        for j,(p,lab) in enumerate(labs):
-            ax=axs[i,j]; dd=dun[(dun.파라미터==p)&(dun.작물==crop)].set_index('처리'); pre=dd['처리전_평균'].iloc[0]
+        for j,(par,lab) in enumerate(labs):
+            ax=axs[i,j]; dd=dun[(dun.파라미터==par)&(dun.작물==crop)].set_index('처리'); pre=dd['처리전_평균'].iloc[0]
             ax.errorbar(0,pre,dd['처리전_SE'].iloc[0],fmt='x',color=PREC,ms=5,capsize=2,lw=1); tops=[pre]
-            ps=pst[(pst.파라미터==p)&(pst.작물==crop)].set_index('처리')
+            ps=pst[(pst.파라미터==par)&(pst.작물==crop)].set_index('처리'); sig=ps.ANOVA_P.iloc[0]<0.05
             for k,t in enumerate(ORDER,1):
-                tops.append(box_strip(ax,k,p_[(p_.작물==crop)&(p_.처리==t)][p].dropna().values,C(crop,t),FILLED[t],0.66))
-                tbl.append((crop,p,t,ps.loc[t,'평균'],ps.loc[t,'Tukey'],pre))
+                tops.append(box_strip(ax,k,src[par][(src[par].작물==crop)&(src[par].처리==t)][par].dropna().values,CROPC[crop][t],FILLED[t],0.66))
+                tbl.append((crop,par,t,ps.loc[t,'평균'],ps.loc[t,'Tukey'] if sig else '',pre))
             ym=max(tops)
-            for k,t in enumerate(ORDER,1):
-                l=ps.loc[t,'Tukey']; 
-                if ps.ANOVA_P.iloc[0]<0.05: ax.text(k,ym*1.05,l,ha='center',fontsize=7)
-            ax.set_ylim(0,ym*1.22); ax.set_xticks([]); ax.tick_params(labelsize=6.5); ax.set_ylabel(lab+' (µmol m$^{-2}$ s$^{-1}$)' if p!='Rd' else lab,fontsize=7)
-        ax=axs[i,3]; keep=fits[(fits.작물==crop)&(~fits.제외)]; I=np.linspace(0,2200 if crop=='lettuce' else 1500,400)
-        for key in ['pre']+ORDER:
-            if key=='pre': s=keep[keep.단계=='처리 전']; c=PREC; ls_='--'; mk='x'; fil=True
-            else: s=keep[(keep.단계=='처리 후')&(keep.처리==key)]; c=C(crop,key); ls_=LS[key]; mk=MK[key]; fil=FILLED[key]
-            pts=Ap[Ap.curve.isin(s.곡선)].copy(); pts['Qr']=pts.Q.round(-1); m_=pts.groupby('Qr')['A'].agg(['mean','sem'])
-            y=np.mean([nrh(I,*row) for row in s[['alpha','theta','Pgmax','Rd']].values],axis=0)
-            k15=I<=1500; ax.plot(I[k15],y[k15],color=c,ls=ls_,lw=1.3)
-            if crop=='lettuce': ax.plot(I[I>=1500],y[I>=1500],color=c,ls=':',lw=1.1)
-            q=s.LSP_Q80.mean(); ax.plot([q],[np.interp(q,I,y)],marker='v',color=c,ms=7,mec='white',mew=0.6,zorder=5)
-        ax.axhline(0,color='0.8',lw=0.6); ax.tick_params(labelsize=6.5); ax.set_ylabel('A (µmol CO$_2$ m$^{-2}$ s$^{-1}$)',fontsize=7)
-        if i==1: ax.set_xlabel('PPFD (µmol m$^{-2}$ s$^{-1}$)',fontsize=7)
-        else: ax.set_xticklabels([])
-        s=st[(st.작물==crop)&(st.지표=='LSP_Q80')].set_index('처리')
-        for t in ORDER: tbl.append((crop,'LSP',t,s.loc[t,'평균'],s.loc[t,'Tukey'] if s.ANOVA_P.iloc[0]<0.05 else '',s['처리전_평균'].iloc[0]))
-    ents=[(Line2D([],[],color=C('bean','ETc') if False else '0.3',lw=0),'')]
-    ents=E_crops()+E_trt(('bean','lettuce'),line=False,gray=gray)+[(Line2D([],[],color=PREC,marker='x',ls='--',lw=1.2),'Pre-treatment'),(Line2D([],[],color='0.3',marker='v',ls='none',ms=7),'LSP')]
-    legend2(fig,ents,4,fontsize=7); fig.tight_layout(rect=(0,0,1,0.88),w_pad=0.8,h_pad=0.6)
-    fig.savefig(FD+('params_gray.png' if gray else 'params.png')); plt.close(fig)
+            if sig:
+                for k,t in enumerate(ORDER,1): ax.text(k,ym*1.05,ps.loc[t,'Tukey'],ha='center',fontsize=7)
+            ax.set_ylim(0,ym*1.22); ax.set_xticks([]); ax.tick_params(labelsize=6); ax.set_ylabel(lab,fontsize=6.3)
+    legend2(fig,E_crops()+E_trt(('bean','lettuce'),line=False)+[(Line2D([],[],color=PREC,marker='x',ls='--',lw=1.2),'Pre-treatment')],4,fontsize=7)
+    fig.tight_layout(rect=(0,0,1,0.88),w_pad=0.5,h_pad=0.6); fig.savefig(FD+'params.png'); plt.close(fig)
     pd.DataFrame(tbl,columns=['crop','par','trt','mean','letter','pre']).to_csv('intermediate/params_table.csv',index=False)
-# ---------- yield / growth
+
 def bars(ax,vals,crop,ylab,letters=True,gray=False,ymax=None):
     ms=[];tops=[]
     for k,t in enumerate(ORDER):
@@ -155,9 +138,9 @@ def yieldfig():
     sp=[('bean',b,'알 F.W','Seed FW (g·plant$^{-1}$)'),('bean',b,'알 D.W','Seed DW (g·plant$^{-1}$)'),('bean',b,'알 수','Seed no. (plant$^{-1}$)'),('bean',b,'꼬투리 수','Pod no. (plant$^{-1}$)'),
         ('lettuce',r,'지상부생체중_전체','Shoot FW (g·plant$^{-1}$)'),('lettuce',r,'지상부건조중_전체','Shoot DW (g·plant$^{-1}$)')]
     for ax,(crop,df,col,lab) in zip(axs,sp):
-        vals={t:df.loc[df.처리==t,col].dropna() for t in ORDER}; ms,P=bars(ax,vals,crop,lab)
-        rows.append([crop,lab]+[round(m,2) for m in ms]+[round((m/ms[0]-1)*100,1) for m in ms[1:]]+[round(P,4)])
-    pd.DataFrame(rows,columns=['crop','var','ETc','ETc50','침수ETc','침수ETc50','d_ETc50','d_침수','d_복합','P']).to_csv('intermediate/yield_table.csv',index=False); print(pd.DataFrame(rows).to_string())
+        vals={t:df.loc[df.처리==t,col].dropna() for t in ORDER}; ms,P=bars(ax,vals,crop,lab); let,_=tukey_letters(vals); ls_=[let[t] for t in ORDER]; ls_=ls_ if len(set(ls_))>1 else ['','','','']
+        rows.append([crop,lab]+[round(m,2) for m in ms]+[round((m/ms[0]-1)*100,1) for m in ms[1:]]+[round(P,4)]+ls_)
+    pd.DataFrame(rows,columns=['crop','var','ETc','ETc50','침수ETc','침수ETc50','d_ETc50','d_침수','d_복합','P','l0','l1','l2','l3']).to_csv('intermediate/yield_table.csv',index=False); print(pd.DataFrame(rows).to_string())
     hs=[(tuple(Patch(color=CROPC[c][t]) if FILLED[t] else Patch(facecolor='white',edgecolor=CROPC[c][t],lw=1.4,hatch='////' if t=='침수ETc50' else None) for c in ('bean','lettuce')),NAME[t]) for t in ORDER]
     legend2(fig,E_crops()+hs,3,fontsize=7.5,hl=2.0)
     for h in fig.legends[0].legend_handles[:0]: pass
@@ -204,6 +187,6 @@ if __name__=='__main__':
     import sys
     for f in (sys.argv[1:] or ['env','cum','rec','params','yieldfig','recap','aq']):
         if f=='recap': recap('bean'); recap('lettuce')
-        elif f=='params': params(); params(True)
+        elif f=='params': params()
         else: globals()[f]()
     print('ok')

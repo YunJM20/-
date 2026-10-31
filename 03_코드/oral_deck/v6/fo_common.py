@@ -62,7 +62,7 @@ def ts_axes(ax,crop,ind,ylab=None,gray=False):
     for d,g in s.groupby('DAT'):
         if g['당일_ANOVA_P_Holm'].iloc[0]<0.05: ax.text(d,(g.평균+g.SE).max()+span*0.04,'*',ha='center',va='bottom',fontsize=10,color='0.2')
     ax.set_ylim(ymin-span*0.05,ymax+span*0.2)
-    bnd=9.5 if crop=='bean' else 10.5; ax.axvline(bnd,color='0.55',ls=':',lw=1,zorder=1)
+    bnd=10.5; ax.axvline(bnd,color='0.55',ls=':',lw=1,zorder=1)
     ax.text(bnd-0.8,ax.get_ylim()[0],'P1',ha='right',va='bottom',fontsize=8,color='0.4'); ax.text(bnd+0.8,ax.get_ylim()[0],'P2',ha='left',va='bottom',fontsize=8,color='0.4')
     ax.set_xlabel('Days after waterlogging start (DAT)')
     if ylab and crop=='bean': ax.set_ylabel(ylab)
