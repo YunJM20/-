@@ -42,7 +42,7 @@ E_crops=lambda crops=('bean','lettuce'): [(Patch(color=ACC[c]),CN[c]) for c in c
 def legend2(fig,ents,ncol,fontsize=7.2,y=1.0,hl=2.6,cs=1.1,tup=True):
     H,L=rowwise([e[0] for e in ents],[e[1] for e in ents],ncol)
     fig.legend(H,L,loc='upper center',bbox_to_anchor=(0.5,y),ncol=ncol,fontsize=fontsize,handler_map={tuple:HandlerTuple(ndivide=None,pad=0.3)},handlelength=hl,columnspacing=cs,handletextpad=0.5,labelspacing=0.35)
-A04=pd.read_csv('intermediate/daily_stats.csv'); A04=A04[A04.지표!='gsw']; A04=pd.concat([A04,pd.read_csv('intermediate/daily_gsw_raw.csv')],ignore_index=True); A04=A04[~((A04.작물=='lettuce')&(A04.DAT<1))]
+A04=pd.read_csv('intermediate/daily_stats.csv'); A04=A04[A04.지표=='__none__']; A04=pd.concat([A04,pd.read_csv('intermediate/daily_gsw_raw.csv'),pd.read_csv('intermediate/daily_mm.csv')],ignore_index=True); A04=A04[~((A04.작물=='lettuce')&(A04.DAT<1))]
 PRE=pd.read_csv('data/02b_LI600_처리전_개별측정.csv'); PRECOL={'gsw':'gsw_해석용','phi':'PhiPS2','fs':'Fs','etr':'ETR'}
 def ts_axes(ax,crop,ind,ylab=None,gray=False):
     s=A04[(A04.지표==ind)&(A04.작물==crop)]

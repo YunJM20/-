@@ -98,6 +98,16 @@ def compact_table(table,size=1050):
                     if rp is not None and rp.get('sz'): sz=rp.get('sz'); break
                 for e in p.findall(A+'endParaRPr'): p.remove(e)
                 ep=etree.SubElement(p,A+'endParaRPr'); ep.set('sz',sz or str(size))
+
+MM=pd.read_csv('an/intermediate/mm_phase.csv')
+def fill_mm(t,ind,fmt):
+    while len(t.rows)>5: delete_row(t,len(t.rows)-1)
+    for c_i,h in enumerate(['Treatment','Soybean P1','Soybean P2','Romaine P1','Romaine P2']): set_cell(t.cell(0,c_i),h)
+    for r_i,(tn,tr) in enumerate([('Control','ETc'),('Drought','ETc50'),('Waterlogging','침수ETc'),('Combined','침수ETc50')],start=1):
+        set_cell(t.cell(r_i,0),tn)
+        for c_i,(cr,pe) in enumerate([('bean','P1'),('bean','P2'),('lettuce','P1'),('lettuce','P2')],start=1):
+            q=MM[(MM.지표==ind)&(MM.작물==cr)&(MM.구간==pe)&(MM.처리==tr)]
+            set_cell(t.cell(r_i,c_i),'–' if q.empty else (fmt.format(q.보정평균.iloc[0])+' '+q.문자.iloc[0]))
 def pct(v,d=0): 
     s=f'{abs(v):.{d}f}'
     return ('−' if v<0 else '+')+s+'%'
@@ -187,8 +197,8 @@ for k in range(4):
     y=1.50+k*1.08
     for g in (bg,chip,ind,met): g[k].top=Inches(y)
     set_para(chip[k].text_frame.paragraphs[0],chips[k]); set_para(ind[k].text_frame.paragraphs[0],inds[k]); set_para(met[k].text_frame.paragraphs[0],mets[k])
-conc(s,'통계: 침수 × 관수 이원 ANOVA·Tukey (형광 지표는 측정일·PAR·기온 보정 평균)')
-foot(s,'P1 = 침수 시작~종료 후 7일(DAT 1~10), P2 = 이후. 형광 지표(Φ_{PSII}, F_{s}, ETR) = PAR·기온 보정 평균 (Ali et al., 2025; Gao et al., 2024), g_{sw} = 온도 보정 gsw (Rizzo & Bailey, 2026; PAR·기온 공변량 보정 없음). 생육은 전 개체 사용.')
+conc(s,'통계: 침수 × 관수 이원 ANOVA·Tukey (형광 지표는 PAR·기온 공변량 보정 평균)')
+foot(s,'P1 = 침수 시작~종료 후 7일(DAT 1~10), P2 = 이후. 형광 지표(Φ_{PSII}, F_{s}, ETR) = PAR·기온 공변량 보정 평균, 혼합모형(처리 고정, 측정일 임의효과; Ali et al., 2025; Gao et al., 2024), g_{sw} = 온도 보정 gsw (Rizzo & Bailey, 2026; PAR·기온 공변량 보정 없음). 생육은 전 개체 사용.')
 notes(s,'(약 20초) 앞서 제시한 네 단계에 맞추어 지표를 측정했습니다. 기공전도도와 명반응은 LI-600으로 반복 측정했고, 형광 지표는 측정 당시의 광도와 기온 차이를 선행 연구를 따라 공변량으로 보정했고, 기공전도도는 보정하지 않은 값을 사용했습니다. 광합성 능력은 LI-6800의 A-Ci와 광-광합성 곡선으로 평가했고, 생육과 수량은 파괴 조사로 측정했습니다.')
 
 # ===== 33 (new) environment
@@ -250,7 +260,7 @@ replace_picture(s,byname(s,'Picture 13'),img(F2+'ts_phi.png'),valign='top')
 shp=[x for x in s.shapes if getattr(x,'has_table',False) and x.has_table][0]; t=shp.table
 drop_col(t,3)
 while len(t.rows)>5: delete_row(t,len(t.rows)-1)
-ph=pd.read_csv('an/intermediate/phi_phase_single.csv')
+ph=pd.read_csv('an/intermediate/mm_phase.csv'); ph=ph[ph.지표=='phi']
 def pv(crop,ph_,tr):
     q=ph[(ph.작물==crop)&(ph.구간==ph_)&(ph.처리==tr)]
     return '–' if q.empty else f'{q.보정평균.iloc[0]:.3f} {q.문자.iloc[0]}'
@@ -263,7 +273,7 @@ set_paras2(byname(s,'TextBox 10'),[('콩 P1:',' 침수구가 대조구보다 약
  ('콩 P2:',' 건조구가 가장 낮았음'),
  ('로메인:',' P1·P2 모두 처리 간 차이 없음')])
 conc(s,'콩은 건조구에서 Φ_{PSII}가 낮았고, 로메인은 처리 간 차이 없음')
-foot(s,'표·그림: 측정일·PAR·기온 보정 평균, Tukey 문자. P2는 PPFD 수준을 나누지 않고 통합하여 분석. 그림: 음영 ± SE, 점선 P1/P2 경계, 회색 띠 흐린 날, * 당일 P<0.05(Holm), X 처리 전.')
+foot(s,'표·그림: PAR·기온 공변량 보정 평균(혼합모형, 측정일 임의효과), Tukey 문자. P2는 PPFD 수준을 나누지 않고 통합하여 분석. 그림: 음영 ± SE, 점선 P1/P2 경계, 회색 띠 흐린 날, * 당일 P<0.05(Holm), X 처리 전.')
 notes(s,'(약 35초) 두 번째 단계인 명반응입니다. P2 구간은 광도 수준을 나누지 않고 통합하여 분석했습니다. 콩에서는 P1에서 침수구가 대조구보다 약간 낮았고, P2에서는 건조구의 Φ_PSII가 0.61로 대조구 0.70보다 낮았습니다. 로메인 상추는 P1과 P2 모두 처리 간 차이가 없었습니다. 따라서 로메인에서는 기공이 닫혔는데도 명반응은 영향을 받지 않았습니다.')
 
 # ===== 13 photosynthetic capacity
@@ -432,7 +442,7 @@ notes(s,'질의응답용 보충 자료 목록입니다.')
 # ===== A1 LI-600 calibration
 s=S(21); title(s,'LI-600 : PAR·기온 보정')
 for _x in [x for x in s.shapes if getattr(x,'has_table',False) and x.has_table]: rm(_x)
-set_paras2(byname(s,'TextBox 10'),['이유: 같은 날에도 처리 간 측정 PAR·기온이 달랐음','모형: y = μ + 처리 + 측정일 + β_{1}·Q_{amb} + β_{2}·T_{air} + ε (Ali et al., 2025; Gao et al., 2024)','선형 PAR이 가장 적합했고 기온 기울기는 유의하지 않았음','로메인: g_{sw}·Φ_{PSII}·F_{s}·ETR 모두 PAR만 보정과 PAR+기온 보정의 판정이 같음'])
+set_paras2(byname(s,'TextBox 10'),['이유: 같은 날에도 처리 간 측정 PAR·기온이 달랐음','모형: y = μ + 처리 + β_{1}·Q_{amb} + β_{2}·T_{air} + 측정일(임의효과) + ε (Ali et al., 2025; Gao et al., 2024)','PAR과 기온을 양적(선형) 공변량으로 넣어 처리별 보정 평균(BLUE)을 산출, Φ_{PSII}는 PAR이 높을수록 낮아짐','기공전도도(g_{sw})는 PAR·기온 보정 없이 온도 보정 gsw(Rizzo & Bailey, 2026)를 사용'])
 conc(s,'큰 차이(g_{sw}, F_{s}, 콩 P2)는 보정에 안정적 — 작은 차이(콩 P1 Φ_{PSII}, ETR)는 보정 방식에 민감')
 notes(s,'질의응답용 자료입니다. LI-600은 야외 광에서 측정하기 때문에 같은 날에도 처리마다 측정 광도와 기온이 달랐습니다. 그래서 측정일, 선형 PAR, 기온을 공변량으로 보정했고, 로메인 상추에서는 PAR만 보정한 결과와 기온까지 보정한 결과의 유의성 판정이 모든 지표에서 같았습니다.')
 
@@ -452,19 +462,18 @@ notes(s,'질의응답용 자료입니다. 광합성 광반응 곡선은 PPFD 8�
 s=S(25); title(s,'LI-600 : 정상 상태 형광 (F_{s})')
 replace_picture(s,byname(s,'Picture 13'),img(F2+'ts_fs.png'),valign='top')
 t=table_of(s)
-set_table(t,[['Treatment',None,None,'Romaine P1','Romaine P2'],[None,None,None,'157.3 a (157.1;158.3)','142.1 a (142.8;143.2)'],[None,None,None,'161.0 a (161.0;159.3)','141.8 a (142.5;142.7)'],[None,None,None,'158.0 a (158.0;157.7)','141.6 a (142.1;141.2)'],[None,None,None,'161.6 a (161.7;162.6)','144.5 a (144.7;143.4)'],[None,None,None,'0.99','0.63'],[None,None,None,'0.66','0.92']])
-clean_table(t)
+fill_mm(t,'fs','{:.1f}')
 set_paras(byname(s,'TextBox 10'),['콩: P1 침수구, P2 건조·침수·복합구가 대조구보다 높음','로메인: 처리 간 차이 없음'])
 conc(s,'F_{s} 절대값 차이는 형광 신호 크기 변화를 포함 — 생리 해석은 비율 지표(Φ_{PSII})로')
-foot(s,'표: 측정일·선형 PAR(Q_{amb})·기온(T_{air}) 보정 평균, Tukey 문자. 그림(보정 일평균): 음영 ± SE, 점선 P1/P2 경계, 회색 띠 흐린 날, * 당일 P<0.05(Holm), X 처리 전.')
+foot(s,'표: PAR(Q_{amb})·기온(T_{air}) 공변량 보정 평균(혼합모형, 측정일 임의효과), Tukey 문자. 그림(보정 일평균): 음영 ± SE, 점선 P1/P2 경계, 회색 띠 흐린 날, * 당일 P<0.05(Holm), X 처리 전.')
 notes(s,'질의응답용 자료입니다. 정상 상태 형광 Fs의 절대값은 로메인 상추에서 처리 간 차이가 없었고, 콩에서는 침수·건조 처리구가 대조구보다 높았습니다.')
 s=S(26); title(s,'LI-600 : 전자전달속도 (ETR)')
+conc(s,'ETR은 측정 광도에 비례 — 콩 P2에서 건조구의 ETR이 가장 낮음')
 replace_picture(s,byname(s,'Picture 13'),img(F2+'ts_etr.png'),valign='top')
 t=table_of(s)
-set_table(t,[['Treatment',None,None,'Romaine P1','Romaine P2'],[None,None,None,'141.7 a (141.5;147.1)','75.6 a (76.4;72.3)'],[None,None,None,'137.8 a (137.8;129.8)','78.3 a (79.0;75.5)'],[None,None,None,'132.7 a (132.7;130.8)','72.7 a (73.2;75.6)'],[None,None,None,'130.1 a (130.2;134.5)','80.4 a (80.5;85.6)'],[None,None,None,'0.84','0.56'],[None,None,None,'0.060','0.61']])
-clean_table(t)
+fill_mm(t,'etr','{:.1f}')
 set_paras(byname(s,'TextBox 10'),['콩: 대조구가 높고 건조구가 가장 낮음','로메인: P1 대조구가 높은 경향, P2 처리 간 차이 없음'])
-foot(s,'표: 측정일·선형 PAR(Q_{amb})·기온(T_{air}) 보정 평균, Tukey 문자.')
+foot(s,'표: PAR(Q_{amb})·기온(T_{air}) 공변량 보정 평균(혼합모형, 측정일 임의효과), Tukey 문자.')
 notes(s,'질의응답용 자료입니다. 전자전달속도는 측정 광도에 비례하므로 광도를 보정한 평균으로 비교했고, 로메인 상추에서는 침수구가 약 6~8% 낮은 경향을 보였지만 측정일 반복 기준으로는 유의하지 않았습니다.')
 
 # ===== A5 cloudy days
@@ -500,4 +509,4 @@ for _s in prs.slides:
     for _sh in _s.shapes:
         if getattr(_sh,'has_table',False) and _sh.has_table: compact_table(_sh.table); bottom_border(_sh.table)
     fix_timing(_s)
-prs.save('oral/oral_v6.pptx'); print('saved',len(prs.slides))
+prs.save('oral/oral_v7.pptx'); print('saved',len(prs.slides))

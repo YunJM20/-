@@ -5,7 +5,7 @@ import os
 CODE = Path(__file__).resolve().parent
 # 이 폴더(analysis)와 같은 위치에 data\ 폴더(분석 입력 CSV)를 둔다. 다른 위치면 환경변수 ROM_DATA 로 지정.
 DATA = Path(os.environ.get("ROM_DATA", CODE.parent / "data"))
-RAW_BEAN_DARK_1016 = None      # 밭콩 전용 (로메인 분석에서는 사용하지 않음)
+RAW_BEAN_DARK_1016 = '/home/user/-/gsw, 형광/1016 콩 형광.xlsx'
 
 INTER = CODE / 'intermediate'                    # 계산 중간 산출물 (CSV)
 FIG = CODE / 'figures'                           # 그래프 PNG
