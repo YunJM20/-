@@ -12,6 +12,7 @@ def big(fig,fname,*a,**k):
     return _orig(fig,'figs7/'+os.path.basename(str(fname)),*a,**k)
 Figure.savefig=big
 which=sys.argv[1]
+if which=='v23': runpy.run_path('fig_v23.py',run_name='__main__')
 if which=='v22': runpy.run_path('fig_v22.py',run_name='__main__')
 if which=='v13': runpy.run_path('fig_v13.py',run_name='__main__')
 elif which=='v17': runpy.run_path('fig_v17.py',run_name='__main__')
