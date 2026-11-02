@@ -12,8 +12,7 @@ def one(crop,fname):
     fig=plt.figure(figsize=(W,H),dpi=300); ax=fig.add_axes([PAD/W,0.15,AX_W/W,0.75]); top=0
     for k,t in enumerate(ORDER):
         m,se,lt=st[t]
-        if t in ('ETc','침수ETc'): c=CROPC[crop][t]
-        else: c=GRAY[t]
+        c=CROPC[crop][t]
         if FILLED[t]: ax.bar(k,m,0.72,color=c)
         else: ax.bar(k,m,0.72,facecolor='white',edgecolor=c,linewidth=1.6,hatch='////' if t=='침수ETc50' else None)
         ax.errorbar(k,m,se,color='#333',capsize=3,lw=1.1); top=max(top,m+se)
