@@ -47,5 +47,5 @@ def make(inds,size,fname,adjust,lg=dict()):
     legend_bar(fig,**lg); fig.subplots_adjust(**adjust); fig.savefig('figs5/'+fname); plt.close(fig)
 if __name__=='__main__':
     make(['gsw'],(7.5,2.55),'bars_gsw.png',dict(left=0.09,right=0.99,top=0.86,bottom=0.25,wspace=0.22),lg=dict(ncol=6,fs=6.6,cs=0.9,hl=1.6))
-    make(['phi','phinpq','phino'],(7.2,5.3),'bars_phi3.png',dict(left=0.095,right=0.99,top=0.89,bottom=0.085,hspace=0.2,wspace=0.22))
+    make(['phi','phinpq','phino'],(7.2,5.3),'bars_phi3.png',dict(left=0.095,right=0.99,top=0.935,bottom=0.085,hspace=0.2,wspace=0.22),lg=dict(ncol=6,fs=6.3,cs=0.7,hl=1.5))
     print('ok')
