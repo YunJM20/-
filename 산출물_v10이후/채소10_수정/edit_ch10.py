@@ -18,6 +18,11 @@ for n,m in MAP.items():
             if m[x.name].startswith('gsw_P2'):
                 from PIL import Image; w=Image.open(A+m[x.name]).size[0]/300; x.width=Inches(w)
             print(n,x.name,m[x.name])
+# 8p 결론 박스: 건조·복합은 침수 종료(DAT 3)부터 50% 관수
+import sys; sys.path.insert(0,'/tmp/claude-0/-home-user--/f2046ef5-a5f5-5769-8dca-a4878d4046a0/scratchpad')
+from lib import set_para as _sp
+cb8=[x for x in p.slides[7].shapes if x.name=='Conclusion Box'][0]
+_sp(cb8.text_frame.paragraphs[0],'침수 72시간 후 정상 관수, 건조·복합은 침수 종료(DAT 3) 후부터 대조구의 50% 관수')
 # 13,14: 그래프 4개로 분리, 블록·화살표·그래프 정렬 (블록 전체 폭 0.92~12.48 = 결론 박스와 동일)
 import sys; sys.path.insert(0,'/tmp/claude-0/-home-user--/f2046ef5-a5f5-5769-8dca-a4878d4046a0/scratchpad')
 from lib import fix_timing
