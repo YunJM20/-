@@ -45,6 +45,7 @@ def make(inds,size,fname,adjust):
     for i,ind in enumerate(inds):
         for j,crop in enumerate(['bean','lettuce']): panel(axs[i,j],ind,crop,xlab=(i==r-1),ylab=(j==0))
     legend_bar(fig); fig.subplots_adjust(**adjust); fig.savefig('figs5/'+fname); plt.close(fig)
-make(['gsw'],(7.5,2.55),'bars_gsw.png',dict(left=0.09,right=0.99,top=0.76,bottom=0.25,wspace=0.22))
-make(['phi','phinpq','phino'],(7.2,5.3),'bars_phi3.png',dict(left=0.095,right=0.99,top=0.89,bottom=0.085,hspace=0.2,wspace=0.22))
-print('ok')
+if __name__=='__main__':
+    make(['gsw'],(7.5,2.55),'bars_gsw.png',dict(left=0.09,right=0.99,top=0.76,bottom=0.25,wspace=0.22))
+    make(['phi','phinpq','phino'],(7.2,5.3),'bars_phi3.png',dict(left=0.095,right=0.99,top=0.89,bottom=0.085,hspace=0.2,wspace=0.22))
+    print('ok')
