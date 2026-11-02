@@ -28,8 +28,8 @@ def make(inds,size,fname,adjust):
     for i,ind in enumerate(inds):
         for j,crop in enumerate(['bean','lettuce']): pct_panel(axs[i,j],ind,crop,xlab=(i==r-1),ylab=(j==0))
     hs=[(tuple(Patch(color=CROPC[c][t]) if FILLED[t] else Patch(facecolor='white',edgecolor=CROPC[c][t],lw=1.4,hatch='////' if t=='침수ETc50' else None) for c in ('bean','lettuce')),NAME[t]) for t in TR]
-    legend2(fig,E_crops()+hs+[(Line2D([],[],color='0.4',ls='--',lw=1),'Control = 100%'),(Line2D([],[],color='none',marker='$*$',mfc='0.2',mec='0.2',ms=7),'differs from control')],3 if r==1 else 4,fontsize=7.2,hl=2.0)
+    legend2(fig,E_crops()+hs+[(Line2D([],[],color='0.4',ls='--',lw=1),'Control = 100%')]+([] if r==1 else [(Line2D([],[],color='none',marker='$*$',mfc='0.2',mec='0.2',ms=7),'differs from control')]),3 if r==1 else 4,fontsize=7.2,hl=2.0)
     fig.subplots_adjust(**adjust); fig.savefig('figs5/'+fname); plt.close(fig)
-make(['gsw'],(7.5,2.55),'pct_gsw.png',dict(left=0.09,right=0.99,top=0.74,bottom=0.25,wspace=0.22))
+make(['gsw'],(7.5,2.55),'pct_gsw.png',dict(left=0.09,right=0.99,top=0.78,bottom=0.25,wspace=0.22))
 make(['phi','phinpq','phino'],(7.2,5.3),'pct_phi3.png',dict(left=0.095,right=0.99,top=0.88,bottom=0.085,hspace=0.2,wspace=0.22))
 print('ok')
