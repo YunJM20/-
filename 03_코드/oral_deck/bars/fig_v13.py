@@ -36,16 +36,16 @@ def panel(ax,ind,crop,xlab=True,ylab=True):
     if ylab: ax.set_ylabel(LAB[ind],fontsize=9)
     if xlab:
         for per,xc in groups: ax.text(xc,-0.2,per,ha='center',va='top',fontsize=8.5,fontweight='bold',color='0.35',transform=ax.get_xaxis_transform())
-def legend_bar(fig,ncol=5):
+def legend_bar(fig,ncol=5,fs=7.2,cs=1.1,hl=2.0):
     hs=[(tuple(Patch(color=CROPC[c][t]) if FILLED[t] else Patch(facecolor='white',edgecolor=CROPC[c][t],lw=1.4,hatch='////' if t=='침수ETc50' else None) for c in ('bean','lettuce')),NAME[t]) for t in ORDER]
-    legend2(fig,E_crops()+hs,ncol,fontsize=7.2,hl=2.0)
-def make(inds,size,fname,adjust):
+    legend2(fig,E_crops()+hs,ncol,fontsize=fs,hl=hl,cs=cs)
+def make(inds,size,fname,adjust,lg=dict()):
     r=len(inds); wr=[nbars('bean')-1+0.9,nbars('lettuce')-1+0.9]
     fig,axs=plt.subplots(r,2,figsize=size,dpi=300,gridspec_kw={'width_ratios':wr}); axs=np.atleast_2d(axs)
     for i,ind in enumerate(inds):
         for j,crop in enumerate(['bean','lettuce']): panel(axs[i,j],ind,crop,xlab=(i==r-1),ylab=(j==0))
-    legend_bar(fig); fig.subplots_adjust(**adjust); fig.savefig('figs5/'+fname); plt.close(fig)
+    legend_bar(fig,**lg); fig.subplots_adjust(**adjust); fig.savefig('figs5/'+fname); plt.close(fig)
 if __name__=='__main__':
-    make(['gsw'],(7.5,2.55),'bars_gsw.png',dict(left=0.09,right=0.99,top=0.76,bottom=0.25,wspace=0.22))
+    make(['gsw'],(7.5,2.55),'bars_gsw.png',dict(left=0.09,right=0.99,top=0.86,bottom=0.25,wspace=0.22),lg=dict(ncol=6,fs=6.6,cs=0.9,hl=1.6))
     make(['phi','phinpq','phino'],(7.2,5.3),'bars_phi3.png',dict(left=0.095,right=0.99,top=0.89,bottom=0.085,hspace=0.2,wspace=0.22))
     print('ok')
