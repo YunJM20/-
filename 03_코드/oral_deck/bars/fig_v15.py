@@ -19,5 +19,8 @@ def one(crop,fname):
         if P<0.05: ax.text(k,m+se,lt,ha='center',va='bottom',fontsize=9)
     ax.set_ylim(0,top*1.22); ax.set_xlim(-0.6,3.6); ax.set_xticks(range(4)); ax.set_xticklabels([F.SHORT[t] for t in ORDER],fontsize=8)
     ax.set_ylabel('g$_{sw}$ (mol·m$^{-2}$·s$^{-1}$)',fontsize=9); ax.tick_params(axis='y',labelsize=8)
+    if crop=='lettuce':
+        from matplotlib.ticker import MultipleLocator, FormatStrFormatter
+        ax.yaxis.set_major_locator(MultipleLocator(0.05)); ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
     fig.savefig('figs5/'+fname); plt.close(fig); print(fname,W,H,round(P,4),{k:(round(v[0],3),v[2]) for k,v in st.items()})
 one('bean','gsw_P2_bean.png'); one('lettuce','gsw_P2_lettuce.png')
