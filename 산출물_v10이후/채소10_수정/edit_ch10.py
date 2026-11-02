@@ -5,6 +5,7 @@ p=Presentation('/home/user/-/채소10_윤정민.pptx')
 MAP={8:{'Picture 26':'irr_cum.png','ET daily':'design_timeline.png'},
  9:{'Picture 19':'gsw_ts.png','Picture 20':'gsw_rec.png','그림 6':'bars_gsw.png','그림 9':'bars_fvfm.png'},
  10:{'Picture 22':'phi3.png','그림 9':'bars_phi3.png'},
+ 11:{'Picture 20':'params_aligned.png'},
 }
 def walk(shs):
     for x in shs:
