@@ -3,7 +3,8 @@ import fo_common as fc
 from fo_common import *
 A=pd.read_csv('intermediate/daily_gsw_raw.csv')
 CL={c:sorted(A[(A.작물==c)&(A.흐림==True)].DAT.unique()) for c in ('bean','lettuce')}
-S=pd.read_csv('intermediate/soy_daily_et.csv'); G=pd.read_csv('intermediate/romaine_daily_et.csv')
+S=pd.read_csv('intermediate/soy_daily_et.csv'); BAD=[('ETc',40),('ETc50',23),('ETc50',26)]  # 센서 이상(로드셀 빠짐)
+S=S[~S.apply(lambda r:(r.처리,r.DAT) in BAD,axis=1)]; G=pd.read_csv('intermediate/romaine_daily_et.csv')
 YL='Daily transpiration (g·pot$^{-1}$·day$^{-1}$)'
 fig,axs=plt.subplots(1,2,figsize=(11.6,2.45),dpi=300,gridspec_kw={'width_ratios':[1.5,1]})
 for ax,crop in zip(axs,['bean','lettuce']):
